@@ -8,7 +8,7 @@ If run on a public/paid cloud, it is architected to try minimise costs (easy sch
 
 ### Peon WebUI (peon.ui)
 
-This is the repo for developing the peon web user interface.
+The [github](https://github.com/nox-noctua-consulting/peon-ui) repo for developing the peon web user interface.
 
 ## State
 
@@ -18,7 +18,7 @@ Completely useless at this point
 
 ## Version Info
 
-### 0.1.3-dev
+### 0.1.1-dev
 - Deployed with ``tiangolo/uvicorn-gunicorn-fastapi:python3.9`` as base image
 - Simple basic homepage with ``darkly`` bootswatch theme applied
 #### Known Bugs
