@@ -1,5 +1,8 @@
 # Base image uvicorn gunicorn fastapi - prebuilt high speed flask
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9
+# Build information
+LABEL "com.peon.description"="Peon Web UI"
+LABEL "maintainer"="Umlatt <richard@noxnoctua.com>"
 # Install python requirements
 COPY ./requirements.txt /app/requirements.txt
 # Update pip and install required python modules
