@@ -13,6 +13,7 @@
         * {
             box-sizing: border-box;
         }
+        
         #myInput {
             background-image: url('static/icons/SEARCH.png');
             background-size: 2.9% 70%;
@@ -62,7 +63,6 @@
                 <a class="nav-item nav-link" id="login" href="/login">Login</a>{% endif %}
             </div>
         </div>
-        <a href="/"><img align="right" src="static/logos/Oxide_White_Jel.svg" width="150" height="50"></a>
     </nav>
     {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %} {% if category == 'error' %}
     <div class="alert alert-danger alter-dismissable fade show" role="alert">
@@ -81,9 +81,12 @@
     {% endif %} {% endfor %} {% endif %} {% endwith %}
     </br>
     <div style="text-align:center;">
-        <h3>{% block main_heading %} -MAIN HEADING- {% endblock %}</h3></br>
+        <h3>{% block main_heading %} -MAIN HEADING- {% endblock %}</h3>
+        </br>
     </div>
-    <div style="text-align:center;"><p class="text-warning"><b>{% block instruction %} -INSTRUCTION- {% endblock %}</b></p></br>
+    <div style="text-align:center;">
+        <p class="text-warning"><b>{% block instruction %} -INSTRUCTION- {% endblock %}</b></p>
+        </br>
         </br>
     </div>
     <div class="container">{% block content %} {% endblock %}</div>
