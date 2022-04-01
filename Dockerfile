@@ -7,3 +7,7 @@ RUN /usr/local/bin/python -m pip install --upgrade pip
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 # Copy application files into container
 COPY ./app /app
+# Move to working directory
+WORKDIR /app
+# Start application
+CMD ["python3", "main.py"]
