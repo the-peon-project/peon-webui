@@ -27,8 +27,6 @@ Completely useless at this point
 
 #### Known Bugs
 
-- [ ] Internal server error
-
 ### Architecture/Rules
 
 WebUI (PeonUI) built into docker image using flask as base.
