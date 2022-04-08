@@ -20,7 +20,7 @@ Completely useless at this point
 
 ## Version Info
 
-### 0.1.1-dev
+### 0.1.2-dev
 
 - Deployed with ``tiangolo/uvicorn-gunicorn-fastapi:python3.9`` as base image
 - Simple basic homepage with ``darkly`` bootswatch theme applied
