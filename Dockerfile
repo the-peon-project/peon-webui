@@ -13,4 +13,4 @@ COPY ./app /app
 # Move to working directory
 WORKDIR /app
 # Start application
-CMD ["python3", "main.py"]
+CMD ["/bin/sh", "-c","python3 main.py >> /var/log/peon/webui.log 2>&1"]
