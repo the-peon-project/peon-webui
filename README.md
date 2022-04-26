@@ -20,7 +20,7 @@ Completely useless at this point
 
 ## Version Info
 
-### 0.1.2-dev
+Check [changelog](https://github.com/nox-noctua-consulting/peon-ui/blob/master/changelog.md) for more information
 
 - Deployed with ``tiangolo/uvicorn-gunicorn-fastapi:python3.9`` as base image
 - Simple basic homepage with ``darkly`` bootswatch theme applied
