@@ -59,4 +59,5 @@ Postgres provided by [postgres:14-alpine](https://hub.docker.com/_/postgres)
 PEON is an open-source project that I am working on in my spare time (for fun).
 However, if you still wish to say thanks, feel free to pick up a virtual coffee for me at Ko-fi.
 
-[Buy me a coffee at Ko-fi](https://ko-fi.com/umlatt47309)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/K3K567ILJ)
+
