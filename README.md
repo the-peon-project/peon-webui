@@ -53,3 +53,10 @@ Postgres provided by [postgres:14-alpine](https://hub.docker.com/_/postgres)
 #### Notes
 
 [Flask app example](https://ianlondon.github.io/blog/deploy-flask-docker-nginx/)
+
+## Support the Project
+
+This is an open source project and I am doing it, in my spare time, for fun.\
+However, if you really wish to say thank you, feel free to pick up a virtual coffee for me at Ko-fi.
+
+[Ko-fi](https://ko-fi.com/umlatt47309)
