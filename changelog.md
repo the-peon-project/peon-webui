@@ -1,5 +1,9 @@
 # PEON UI - Changelog
 
+## 0.1.5-dev
+
+- Logging - Added devMode switch
+
 ## 0.1.4-dev
 
 - Dev Tools - Added dev tools to container
