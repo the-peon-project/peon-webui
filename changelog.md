@@ -1,5 +1,9 @@
 # PEON UI - Changelog
 
+## 0.1.6-dev
+
+- Favicon
+
 ## 0.1.5-dev
 
 - Logging - Added devMode switch
