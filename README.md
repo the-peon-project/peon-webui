@@ -9,6 +9,10 @@ Art by [André Kent - Artstation](https://www.artstation.com/artwork/W2E0RQ)
 
 ## The Easy Game Server Manager
 
+### Installation
+
+> Please find the installation instructions at [PEON](https://github.com/nox-noctua-consulting/peon/) master project, as there are several dependencies that are required for this module to work correctly.
+
 ### [Peon Project](https://github.com/nox-noctua-consulting/peon)
 
 An **OpenSource** project to assist gamers in self-deploying/managing game servers.\
