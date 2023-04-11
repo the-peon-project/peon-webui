@@ -1,6 +1,6 @@
 # PEON - Web UI
 
-![PEON](https://github.com/nox-noctua-consulting/peon/blob/main/media/andre-kent-peon-turntable.jpeg)
+![PEON](https://github.com/the-peon-project/peon/blob/main/media/andre-kent-peon-turntable.jpeg)
 Art by [André Kent - Artstation](https://www.artstation.com/artwork/W2E0RQ)
 **This project owns no rights to the image above. Please link to the site and request them accordingly.**
 
@@ -11,17 +11,17 @@ Art by [André Kent - Artstation](https://www.artstation.com/artwork/W2E0RQ)
 
 ### Installation
 
-> Please find the installation instructions at [PEON](https://github.com/nox-noctua-consulting/peon/) master project, as there are several dependencies that are required for this module to work correctly.
+> Please find the installation instructions at [PEON](https://github.com/the-peon-project/peon/) master project, as there are several dependencies that are required for this module to work correctly.
 
-### [Peon Project](https://github.com/nox-noctua-consulting/peon)
+### [Peon Project](https://github.com/the-peon-project/peon)
 
 An **OpenSource** project to assist gamers in self-deploying/managing game servers.\
 Intended to be a one-stop-shop for game server deployment/management.\
 If run on a public/paid cloud, it is architected to try to minimise costs (easy schedule/manage uptime vs downtime)\
 
-### Peon WebUI (peon.ui)
+### Peon WebUI (peon.webui)
 
-The [github](https://github.com/nox-noctua-consulting/peon-ui) repo for developing the peon web user interface.
+The [github](https://github.com/the-peon-project/peon-webui) repo for developing the peon web user interface.
 
 ## State
 
@@ -31,12 +31,12 @@ Completely useless at this point
 
 ## Version Info
 
-Check [changelog](https://github.com/nox-noctua-consulting/peon-ui/blob/master/changelog.md) for more information
+Check [changelog](https://github.com/the-peon-project/peon-webui/blob/master/changelog.md) for more information
 
 - Deployed with ``tiangolo/uvicorn-gunicorn-fastapi:python3.9`` as a base image
 - Simple basic homepage with ``darkly`` bootswatch theme applied
 
-#### Known Bugs
+### Known Bugs
 
 ### Architecture/Rules
 
