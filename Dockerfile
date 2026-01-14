@@ -7,10 +7,10 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /build/frontend
 
 # Copy package files for dependency caching
-COPY frontend/package.json frontend/yarn.lock ./
+COPY frontend/package.json ./
 
 # Install dependencies
-RUN yarn install --frozen-lockfile
+RUN npm install --force
 
 # Copy frontend source
 COPY frontend/ ./
@@ -18,7 +18,7 @@ COPY frontend/ ./
 # Build production frontend
 ARG REACT_APP_BACKEND_URL=""
 ENV REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL}
-RUN yarn build
+RUN npm run build
 
 # =============================================================================
 # RUNTIME: Python for backend + static frontend
