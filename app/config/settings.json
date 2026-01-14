@@ -1,8 +1,0 @@
-{
-    "db" : {
-      "hostname" : "172.20.0.2",
-      "database" : "postgres",
-      "username" : "gromhellscream",
-      "password" : "Zu88Zu88"
-    } 
-  }
