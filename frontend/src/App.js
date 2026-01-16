@@ -270,12 +270,13 @@ const AdminWizard = ({ onComplete }) => {
                 <div>
                   <label className="block text-sm text-gray-300 mb-2">Base URL</label>
                   <input
-                    type="url"
-                    placeholder="http://server:5000"
+                    type="text"
+                    placeholder="http://server.example.com:5000"
                     value={orchData.orchestrator_url}
                     onChange={(e) => setOrchData({ ...orchData, orchestrator_url: e.target.value })}
                     className="w-full"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Include the full URL with protocol and port (e.g., http://server.example.com:5000)</p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-300 mb-2">API Key</label>

@@ -1,8 +1,16 @@
 import sqlite3
+import os
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent.parent
-DB_PATH = ROOT_DIR / 'peon.db'
+
+# Use DATABASE_PATH environment variable if set (for containers)
+# Otherwise fall back to ROOT_DIR / 'peon.db' for local development
+DB_PATH_STR = os.environ.get('DATABASE_PATH', str(ROOT_DIR / 'peon.db'))
+DB_PATH = Path(DB_PATH_STR)
+
+# Ensure the parent directory exists
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def get_db():
     """Get database connection with row factory"""

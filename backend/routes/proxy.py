@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from core.database import get_db, dict_from_row
 from core.security import get_current_user, get_current_admin_user
+from core.orchestrator_url import resolve_orchestrator_url
 from services.orchestrator import OrchestratorService
 from services.audit import AuditService
 
@@ -53,11 +54,13 @@ async def get_servers(orch_id: str, current_user: dict = Depends(get_current_use
         raise HTTPException(status_code=404, detail="Orchestrator not found or inactive")
     
     try:
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=120, connect=10, sock_read=110)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key']}
-            url = f"{orch['base_url']}/api/v1/servers"
+            base_url = resolve_orchestrator_url(orch['base_url'])
+            url = f"{base_url}/api/v1/servers"
             
-            async with session.get(url, headers=headers, timeout=30) as response:
+            async with session.get(url, headers=headers) as response:
                 if response.status == 200:
                     servers = await response.json()
                     
@@ -102,11 +105,13 @@ async def get_server_info(orch_id: str, server_uid: str, current_user: dict = De
         raise HTTPException(status_code=404, detail="Orchestrator not found")
     
     try:
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=60, connect=10, sock_read=50)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key']}
-            url = f"{orch['base_url']}/api/v1/server/get/{server_uid}"
+            base_url = resolve_orchestrator_url(orch['base_url'])
+            url = f"{base_url}/api/v1/server/get/{server_uid}"
             
-            async with session.get(url, headers=headers, timeout=30) as response:
+            async with session.get(url, headers=headers) as response:
                 if response.status == 200:
                     return await response.json()
                 else:
@@ -127,18 +132,20 @@ async def get_server_stats(orch_id: str, server_uid: str, current_user: dict = D
         raise HTTPException(status_code=404, detail="Orchestrator not found")
     
     try:
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=30, connect=5, sock_read=25)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key']}
+            base_url = resolve_orchestrator_url(orch['base_url'])
             
             # Try stats endpoint first
-            stats_url = f"{orch['base_url']}/api/v1/server/stats/{server_uid}"
-            async with session.get(stats_url, headers=headers, timeout=10) as response:
+            stats_url = f"{base_url}/api/v1/server/stats/{server_uid}"
+            async with session.get(stats_url, headers=headers) as response:
                 if response.status == 200:
                     return await response.json()
             
             # Fallback to info endpoint
-            info_url = f"{orch['base_url']}/api/v1/server/get/{server_uid}"
-            async with session.get(info_url, headers=headers, timeout=10) as response:
+            info_url = f"{base_url}/api/v1/server/get/{server_uid}"
+            async with session.get(info_url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
                     stats = {}
@@ -177,11 +184,13 @@ async def deploy_server(
     }
     
     try:
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=180, connect=10, sock_read=170)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key'], "Content-Type": "application/json"}
-            url = f"{orch['base_url']}/api/v1/server/create"
+            base_url = resolve_orchestrator_url(orch['base_url'])
+            url = f"{base_url}/api/v1/server/create"
             
-            async with session.post(url, headers=headers, json=deploy_payload, timeout=60) as response:
+            async with session.post(url, headers=headers, json=deploy_payload) as response:
                 result = await response.json()
                 
                 if response.status in [200, 201]:
@@ -227,16 +236,18 @@ async def server_action(
         raise HTTPException(status_code=404, detail="Orchestrator not found")
     
     try:
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=90, connect=10, sock_read=80)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key']}
-            url = f"{orch['base_url']}/api/v1/server/{action}/{server_uid}"
+            base_url = resolve_orchestrator_url(orch['base_url'])
+            url = f"{base_url}/api/v1/server/{action}/{server_uid}"
             
             # Add update mode if applicable
             body = None
             if action == 'update' and update_data:
                 body = {"mode": update_data.mode}
             
-            async with session.put(url, headers=headers, json=body, timeout=30) as response:
+            async with session.put(url, headers=headers, json=body) as response:
                 try:
                     result = await response.json()
                 except Exception:
@@ -283,10 +294,12 @@ async def proxy_orchestrator(
     if not orch:
         raise HTTPException(status_code=404, detail="Orchestrator not found")
     
-    url = f"{orch['base_url']}/api/v1/{path}"
+    base_url = resolve_orchestrator_url(orch['base_url'])
+    url = f"{base_url}/api/v1/{path}"
     headers = {"X-Api-Key": orch['api_key']}
     
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=90, connect=10, sock_read=80)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         try:
             body = None
             if request.method in ["POST", "PUT"]:
@@ -299,8 +312,7 @@ async def proxy_orchestrator(
                 method=request.method,
                 url=url,
                 headers=headers,
-                json=body if body else None,
-                timeout=30
+                json=body if body else None
             ) as response:
                 try:
                     return await response.json()

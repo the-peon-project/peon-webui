@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, Dict
+import re
 
 class SystemStatus(BaseModel):
     initialized: bool
@@ -17,6 +18,20 @@ class AdminWizardComplete(BaseModel):
     orchestrator_name: Optional[str] = None
     orchestrator_url: Optional[str] = None
     orchestrator_api_key: Optional[str] = None
+    
+    @field_validator('orchestrator_url')
+    @classmethod
+    def validate_url(cls, v):
+        if v is None or v == '':
+            return v
+        # Basic URL validation - must start with http:// or https:// and should include port for non-standard ports
+        if not re.match(r'^https?://.+', v):
+            raise ValueError('URL must start with http:// or https://')
+        # Warn if port is missing (not 80 or 443) by checking if there's a : after the domain
+        if ':' not in v.split('://')[1].split('/')[0].split('?')[0]:
+            # Port might be missing - this is just a warning, we'll allow it
+            pass
+        return v
 
 class FeatureFlags(BaseModel):
     online_users: bool = True

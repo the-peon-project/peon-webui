@@ -666,13 +666,15 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
 
   // Load plans when deploy modal opens
   const handleOpenDeployModal = async () => {
-    setShowDeployModal(true);
     setLoadingPlans(true);
+    setPlans([]); // Reset plans before loading
+    setShowDeployModal(true);
     try {
       const response = await api.get('/proxy/plans');
       setPlans(response.data);
     } catch (err) {
       console.error('Failed to load plans:', err);
+      alert('Failed to load game plans: ' + (err.response?.data?.detail || err.message));
     } finally {
       setLoadingPlans(false);
     }

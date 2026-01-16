@@ -1,0 +1,60 @@
+# Example Docker Compose configuration for PEON WebUI
+# Copy this file to docker-compose.yml and adjust as needed
+
+version: '3.8'
+
+services:
+  webui:
+    image: umlatt/peon.webui:latest
+    container_name: peon.webui
+    restart: unless-stopped
+    ports:
+      - "80:80"      # Frontend
+      - "8001:8001"  # Backend API
+    volumes:
+      - ./data:/data  # Persistent database storage
+    environment:
+      # Security
+      - SECRET_KEY=change-this-to-a-random-secure-key-in-production
+      
+      # CORS (comma-separated origins, or * for all)
+      - CORS_ORIGINS=*
+      
+      # Database path (already set in Dockerfile, override if needed)
+      # - DATABASE_PATH=/data/peon.db
+      
+      # URL Overrides (optional, for local Docker networking)
+      # Format: external_url=internal_url,external_url2=internal_url2
+      # Example for single local orchestrator:
+      # - ORCHESTRATOR_URL_OVERRIDE=http://server.example.com:5000=http://peon.orc:5000
+      # Example for multiple orchestrators:
+      # - ORCHESTRATOR_URL_OVERRIDE=http://server1.com:5000=http://orc1:5000,http://server2.com:5000=http://orc2:5000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Example local orchestrator (optional - only if running on same host)
+  # orchestrator:
+  #   image: umlatt/peon.orc:latest
+  #   container_name: peon.orc
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5000:5000"
+  #   volumes:
+  #     - ./orchestrator-data:/home/peon
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     - API_KEY=your-secure-api-key-here
+
+# Networks (optional - use if you want custom networking)
+# networks:
+#   peon-network:
+#     driver: bridge
+
+# Volumes
+volumes:
+  data:
+    driver: local

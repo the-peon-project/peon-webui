@@ -28,7 +28,7 @@ function build_container_image(){
     then
         cd $dockerfile_path
         update_banner
-        docker build --build-arg VERSION="$version" -t $container_tag:$version .
+        docker build --no-cache --build-arg VERSION="$version" -t $container_tag:$version .
         docker tag $container_tag:$version $container_tag:latest
     else
         printf "Version number required.\n\te.g.\t$0 1.0.2\n"
