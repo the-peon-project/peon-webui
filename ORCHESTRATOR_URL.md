@@ -1,130 +1,63 @@
 # Orchestrator URL Configuration
 
-This document explains how orchestrator URLs are handled in the PEON WebUI, particularly for Docker deployments where internal networking differs from external access.
+This document explains how PEON WebUI resolves orchestrator URLs in local and containerized deployments.
 
-## Problem
+## Why this exists
 
-When the WebUI and Orchestrator containers run on the same Docker host:
-- Orchestrators should be configured with their external URL (e.g., `http://server.example.com:5000`) for remote access
-- But from within Docker, accessing the external IP may fail due to hairpin NAT limitations
-- Containers on the same Docker network should communicate directly using service names (e.g., `http://orchestrator:5000`)
+When WebUI runs in Docker, values like http://localhost:5000 usually point to the WebUI container itself, not your host machine. That can make orchestrator test/connect/sync calls fail even though the URL looks valid in the UI.
 
-## Solution
+## Runtime URL resolution order
 
-The WebUI supports optional URL rewriting via environment variables. This allows you to configure different URLs for internal Docker networking while storing the external URLs in the database.
+1. If ORCHESTRATOR_URL_OVERRIDE is set and a mapping matches, that mapping is used.
+2. Else if the configured URL host is localhost or 127.0.0.1, WebUI rewrites it to ORCHESTRATOR_LOCALHOST_TARGET.
+3. Else the configured URL is used as-is.
 
-### Configuration via Environment Variables
+Default ORCHESTRATOR_LOCALHOST_TARGET value: host.docker.internal
 
-Set the `ORCHESTRATOR_URL_OVERRIDE` environment variable to map external URLs to internal Docker service names:
+## Environment variables
 
-**Single orchestrator:**
-```yaml
-# docker-compose.yml
+ORCHESTRATOR_URL_OVERRIDE
+- Optional explicit mapping list.
+- Format: external_url=internal_url,external_url2=internal_url2
+- Example:
+  ORCHESTRATOR_URL_OVERRIDE=http://server1.example.com:5000=http://orc1:5000,http://server2.example.com:5000=http://orc2:5000
+
+ORCHESTRATOR_LOCALHOST_TARGET
+- Optional host used when users configure localhost or 127.0.0.1 in the UI.
+- Default: host.docker.internal
+- Example:
+  ORCHESTRATOR_LOCALHOST_TARGET=172.17.0.1
+
+## Standalone deployment in /home/richard/peon
+
+If you are running the standalone stack from /home/richard/peon and added a local orchestrator in WebUI, set these environment values on the WebUI service in your compose fragment:
+
+- ORCHESTRATOR_LOCALHOST_TARGET=host.docker.internal
+- ORCHESTRATOR_URL_OVERRIDE=http://localhost:5000=http://peon.orc:5000
+
+This gives you both behaviors:
+- localhost entries from the UI are rewritten safely.
+- explicit overrides for known external/local URLs still work.
+
+## Compose example
+
 services:
   webui:
     environment:
-      - ORCHESTRATOR_URL_OVERRIDE=http://server.example.com:5000=http://orchestrator:5000
-```
+      - ORCHESTRATOR_LOCALHOST_TARGET=host.docker.internal
+      - ORCHESTRATOR_URL_OVERRIDE=http://localhost:5000=http://peon.orc:5000
 
-**Multiple orchestrators:**
-```yaml
-services:
-  webui:
-    environment:
-      - ORCHESTRATOR_URL_OVERRIDE=http://server1.example.com:5000=http://orc1:5000,http://server2.example.com:5000=http://orc2:5000
-```
+## What to enter in the UI
 
-Format: `external_url=internal_url,external_url2=internal_url2`
+In the setup wizard and orchestrator modal, always enter a full URL including scheme and port, for example:
+- http://localhost:5000
+- http://server.example.com:5000
 
-### When to Use URL Overrides
+## Quick verification
 
-**Use URL overrides when:**
-- ✅ Orchestrators run on the same Docker host as WebUI
-- ✅ You experience connection timeouts to external URLs from within Docker
-- ✅ Orchestrators are on the same Docker network
-
-**Don't use URL overrides when:**
-- ❌ Orchestrators are on different physical/virtual hosts
-- ❌ External URLs are fully accessible from within Docker containers
-- ❌ Using production orchestrators with proper external DNS/routing
-
-### Example Docker Compose Configuration
-
-```yaml
-version: '3.8'
-
-services:
-  orchestrator:
-    image: peon/orchestrator:latest
-    container_name: peon.orc
-    ports:
-      - "5000:5000"
-    environment:
-      - API_KEY=your-api-key-here
-  
-  webui:
-    image: peon/webui:latest
-    container_name: peon.webui
-    ports:
-      - "80:80"
-      - "8001:8001"
-    environment:
-      # Map external URL to Docker service name
-      - ORCHESTRATOR_URL_OVERRIDE=http://server.example.com:5000=http://peon.orc:5000
-    volumes:
-      - ./data:/data
-```
-
-### Production Deployments
-
-For production deployments where orchestrators are on different hosts:
-- Configure orchestrators with their actual external URLs
-- **Do not** set `ORCHESTRATOR_URL_OVERRIDE`
-- The WebUI will connect directly to the configured URLs
-
-## Wizard Input Changes
-
-The orchestrator URL input in the setup wizard has been improved:
-- Changed from `type="url"` to `type="text"` to prevent browser URL normalization
-- Added helper text: "Include the full URL with protocol and port"
-- Added backend validation to ensure URLs start with `http://` or `https://`
-- Added example placeholder: `http://server.example.com:5000`
-
-**Important:** Always enter the full external URL including port in the wizard. URL overrides are applied at runtime, not during configuration.
-your configuration:
-
-**Check orchestrator URLs in database:**
-```bash
-docker exec peon.webui python3 -c "
-import sqlite3
-conn = sqlite3.connect('/data/peon.db')
-cursor = conn.cursor()
-cursor.execute('SELECT name, base_url FROM orchestrators')
-for row in cursor.fetchall():
-    print(f'{row[0]}: {row[1]}')
-"
-```
-
-**Test URL resolution with overrides:**
-```bash
-# Without override - should return original URL
-docker exec peon.webui bash -c "cd /app/backend && python3 -c \"
-from core.orchestrator_url import resolve_orchestrator_url
-print(resolve_orchestrator_url('http://server.example.com:5000'))
-\""
-
-# With override - set environment variable first in docker-compose.yml
-# Should return the mapped internal URL
-```
-
-**Test actual connectivity:**
-```bash
-# From webui container to orchestrator
-docker exec peon.webui curl -s http://orchestrator:5000/api/v1/orchestrator
-
-# Check webui logs for URL rewrite messages
-docker compose logs webui | grep "Orchestrator URL rewritedocker exec peon.webui python3 -c "
-from core.orchestrator_url import resolve_orchestrator_url
-print(resolve_orchestrator_url('http://server.warcamp.org:5000'))
-"
-```
+1. Confirm stored orchestrator URLs:
+   docker exec peon.webui python3 -c "import sqlite3; c=sqlite3.connect('/data/peon.db'); cur=c.cursor(); cur.execute('select name, base_url from orchestrators'); print(cur.fetchall())"
+2. Test orchestrator endpoint from container network:
+   docker exec peon.webui curl -s http://peon.orc:5000/api/v1/orchestrator
+3. Check backend logs for rewrite messages:
+   docker compose logs webui | grep "Orchestrator URL rewrite\|Orchestrator localhost rewrite"

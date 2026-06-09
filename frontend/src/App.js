@@ -277,6 +277,7 @@ const AdminWizard = ({ onComplete }) => {
                     className="w-full"
                   />
                   <p className="text-xs text-gray-500 mt-1">Include the full URL with protocol and port (e.g., http://server.example.com:5000)</p>
+                  <p className="text-xs text-amber-400 mt-1">If WebUI runs in Docker and you enter localhost, backend calls may be rewritten to host.docker.internal.</p>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-300 mb-2">API Key</label>

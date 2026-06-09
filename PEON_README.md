@@ -308,7 +308,6 @@ This project uses components from the PEON project (FOSS).
 
 - **PEON Project**: https://github.com/the-peon-project
 - **Warcraft**: Inspiration for theme and aesthetics
-- **Emergent**: Development platform
 
 ---
 

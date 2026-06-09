@@ -25,6 +25,8 @@ services:
       
       # URL Overrides (optional, for local Docker networking)
       # Format: external_url=internal_url,external_url2=internal_url2
+      # Localhost rewrite target (optional): used when orchestrators are configured as localhost/127.0.0.1
+      # - ORCHESTRATOR_LOCALHOST_TARGET=host.docker.internal
       # Example for single local orchestrator:
       # - ORCHESTRATOR_URL_OVERRIDE=http://server.example.com:5000=http://peon.orc:5000
       # Example for multiple orchestrators:

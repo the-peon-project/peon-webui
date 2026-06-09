@@ -10,6 +10,7 @@ import json
 
 from core.database import get_db
 from core.security import get_current_user, get_current_admin_user, decode_token
+from core.orchestrator_url import resolve_orchestrator_url
 from services.orchestrator import OrchestratorService
 
 router = APIRouter(prefix="/console")
@@ -34,7 +35,8 @@ async def get_server_logs(
         async with aiohttp.ClientSession() as session:
             headers = {"X-Api-Key": orch['api_key']}
             # Try to get logs from orchestrator
-            url = f"{orch['base_url']}/api/v1/server/logs/{server_uid}?lines={lines}"
+            base_url = resolve_orchestrator_url(orch['base_url'])
+            url = f"{base_url}/api/v1/server/logs/{server_uid}?lines={lines}"
             
             async with session.get(url, headers=headers, timeout=30) as response:
                 if response.status == 200:
@@ -128,7 +130,8 @@ async def websocket_console(
     
     try:
         # Attempt to connect to orchestrator's WebSocket for logs
-        orch_ws_url = f"{orch['base_url'].replace('http', 'ws')}/api/v1/ws/console/{server_uid}"
+        base_url = resolve_orchestrator_url(orch['base_url'])
+        orch_ws_url = f"{base_url.replace('http', 'ws')}/api/v1/ws/console/{server_uid}"
         
         async with aiohttp.ClientSession() as session:
             try:
@@ -181,7 +184,7 @@ async def websocket_console(
                         
                         # Fetch logs
                         headers = {"X-Api-Key": orch['api_key']}
-                        url = f"{orch['base_url']}/api/v1/server/logs/{server_uid}?lines=50"
+                        url = f"{base_url}/api/v1/server/logs/{server_uid}?lines=50"
                         
                         async with session.get(url, headers=headers, timeout=10) as response:
                             if response.status == 200:

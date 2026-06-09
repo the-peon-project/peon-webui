@@ -16,6 +16,8 @@ from core.config import setup_logging, CORS_ORIGINS, SYNC_INTERVAL
 from core.database import init_db, get_db, dict_from_row
 from core.security import decode_token
 from core.websocket import chat_manager
+from core.orchestrator_url import resolve_orchestrator_url
+from services.test_seed import ensure_test_users
 
 # Routes
 from routes import api_router
@@ -42,7 +44,8 @@ async def sync_orchestrator_servers():
                     try:
                         orch_dict = dict_from_row(orch)
                         headers = {"X-Api-Key": orch_dict['api_key']}
-                        url = f"{orch_dict['base_url']}/api/v1/servers"
+                        base_url = resolve_orchestrator_url(orch_dict['base_url'])
+                        url = f"{base_url}/api/v1/servers"
                         
                         async with session.get(url, headers=headers, timeout=30) as response:
                             if response.status == 200:
@@ -83,6 +86,7 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
     init_db()
+    ensure_test_users()
     logger.info("Database initialized")
     
     # Start background sync task

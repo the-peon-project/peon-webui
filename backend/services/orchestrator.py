@@ -4,6 +4,7 @@ from typing import Optional, List
 import aiohttp
 import asyncio
 from core.database import get_db, dict_from_row
+from core.orchestrator_url import resolve_orchestrator_url
 
 class OrchestratorService:
     """Service for orchestrator management"""
@@ -117,7 +118,8 @@ class OrchestratorService:
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {"X-Api-Key": api_key}
-                url = f"{base_url}/api/v1/orchestrator"
+                resolved_base_url = resolve_orchestrator_url(base_url)
+                url = f"{resolved_base_url}/api/v1/orchestrator"
                 
                 async with session.get(url, headers=headers, timeout=10) as response:
                     if response.status == 200:

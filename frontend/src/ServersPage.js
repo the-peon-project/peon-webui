@@ -546,13 +546,14 @@ const OrchestratorModal = ({ orchestrator, onClose, onSave }) => {
           <div>
             <label className="block text-sm text-gray-300 mb-2">Base URL</label>
             <input
-              type="url"
+              type="text"
               value={formData.base_url}
               onChange={(e) => setFormData({ ...formData, base_url: e.target.value })}
               required
               placeholder="http://server:5000"
               className="w-full"
             />
+            <p className="text-xs text-gray-500 mt-1">Use a full URL with protocol and port. For containerized WebUI, localhost may be rewritten automatically.</p>
           </div>
 
           <div>

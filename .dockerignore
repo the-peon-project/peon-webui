@@ -52,8 +52,7 @@ peon-orc/
 peon-warplans/
 peon-webui/
 
-# Emergent/Platform specific
-.emergent/
+# Platform specific
 memory/
 
 # Misc
