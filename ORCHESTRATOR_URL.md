@@ -11,6 +11,7 @@ When WebUI runs in Docker, values like http://localhost:5000 usually point to th
 1. If ORCHESTRATOR_URL_OVERRIDE is set and a mapping matches, that mapping is used.
 2. Else if the configured URL host is localhost or 127.0.0.1, WebUI rewrites it to ORCHESTRATOR_LOCALHOST_TARGET.
 3. Else the configured URL is used as-is.
+4. If the configured URL cannot be reached from Docker, WebUI retries through `host.docker.internal` on the same port when that alias is available.
 
 Default ORCHESTRATOR_LOCALHOST_TARGET value: host.docker.internal
 
@@ -38,6 +39,11 @@ If you are running the standalone stack from /home/richard/peon and added a loca
 This gives you both behaviors:
 - localhost entries from the UI are rewritten safely.
 - explicit overrides for known external/local URLs still work.
+- host-routed URLs can be mapped explicitly when needed.
+
+For the default standalone stack in `/home/richard/peon`, the most reliable option for the local ORC service is to configure the orchestrator directly as:
+
+- `http://peon.orc:5000`
 
 ## Compose example
 
@@ -50,7 +56,7 @@ services:
 ## What to enter in the UI
 
 In the setup wizard and orchestrator modal, always enter a full URL including scheme and port, for example:
-- http://localhost:5000
+- http://peon.orc:5000
 - http://server.example.com:5000
 
 ## Quick verification

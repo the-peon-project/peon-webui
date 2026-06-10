@@ -67,6 +67,7 @@ COPY --from=frontend-builder /build/frontend/build /app/frontend/build
 # NGINX: Configure for serving frontend + proxy to backend
 RUN echo 'server { \n\
     listen 80; \n\
+    listen [::]:80; \n\
     server_name _; \n\
     \n\
     # Frontend static files \n\

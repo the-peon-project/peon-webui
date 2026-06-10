@@ -46,8 +46,14 @@ docker run -d \
 
 ```bash
 cd backend
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+```
+
+Or from repository root:
+
+```bash
+python3 -m uvicorn backend.server:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 ### Frontend
@@ -68,6 +74,10 @@ REACT_APP_BACKEND_URL=http://localhost:8001 yarn start
 | `JWT_SECRET` | JWT signing secret | Auto-generated |
 | `LOG_LEVEL` | Logging level | `INFO` |
 | `REACT_APP_BACKEND_URL` | Backend API URL | `/api` |
+
+### Orchestrator URL in Docker
+
+When WebUI and ORC run in the same Docker Compose stack, configure orchestrators with the internal service URL (for example `http://peon.orc:5000`) so API calls resolve from inside the WebUI container.
 
 ## Architecture
 

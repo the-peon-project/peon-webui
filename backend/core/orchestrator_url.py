@@ -79,3 +79,42 @@ def resolve_orchestrator_url(configured_url: str) -> str:
     
     # No matching override found, use URL as-is
     return configured_url
+
+
+def resolve_orchestrator_url_candidates(configured_url: str) -> list[str]:
+    """Return the preferred orchestrator URL plus any safe fallback URLs."""
+    resolved_url = resolve_orchestrator_url(configured_url)
+    candidates = []
+
+    if resolved_url:
+        candidates.append(resolved_url)
+
+    try:
+        parsed = urlparse(resolved_url)
+        fallback_host = os.environ.get('ORCHESTRATOR_LOCALHOST_TARGET', 'host.docker.internal').strip()
+
+        if not fallback_host:
+            return candidates
+
+        if parsed.hostname in {fallback_host, 'localhost', '127.0.0.1'}:
+            return candidates
+
+        netloc = fallback_host
+        if parsed.port:
+            netloc = f"{fallback_host}:{parsed.port}"
+
+        fallback_url = urlunparse((
+            parsed.scheme,
+            netloc,
+            parsed.path,
+            parsed.params,
+            parsed.query,
+            parsed.fragment,
+        ))
+
+        if fallback_url and fallback_url not in candidates:
+            candidates.append(fallback_url)
+    except Exception as exc:
+        logger.warning(f"Failed to build orchestrator fallback URL for '{configured_url}': {exc}")
+
+    return candidates

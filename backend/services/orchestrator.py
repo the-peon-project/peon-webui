@@ -4,7 +4,7 @@ from typing import Optional, List
 import aiohttp
 import asyncio
 from core.database import get_db, dict_from_row
-from core.orchestrator_url import resolve_orchestrator_url
+from core.orchestrator_url import resolve_orchestrator_url, resolve_orchestrator_url_candidates
 
 class OrchestratorService:
     """Service for orchestrator management"""
@@ -118,20 +118,23 @@ class OrchestratorService:
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {"X-Api-Key": api_key}
-                resolved_base_url = resolve_orchestrator_url(base_url)
-                url = f"{resolved_base_url}/api/v1/orchestrator"
-                
-                async with session.get(url, headers=headers, timeout=10) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        return {
-                            "success": True,
-                            "message": f"Connected successfully! Version: {data.get('version', 'Unknown')}"
-                        }
-                    elif response.status == 401:
-                        return {"success": False, "message": "Invalid API key"}
-                    else:
-                        return {"success": False, "message": f"Connection failed: HTTP {response.status}"}
+                for resolved_base_url in resolve_orchestrator_url_candidates(base_url):
+                    url = f"{resolved_base_url}/api/v1/orchestrator"
+
+                    try:
+                        async with session.get(url, headers=headers, timeout=10) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                return {
+                                    "success": True,
+                                    "message": f"Connected successfully! Version: {data.get('version', 'Unknown')}"
+                                }
+                            if response.status == 401:
+                                return {"success": False, "message": "Invalid API key"}
+                    except (asyncio.TimeoutError, aiohttp.ClientError):
+                        continue
+
+                return {"success": False, "message": "Connection timeout"}
         except asyncio.TimeoutError:
             return {"success": False, "message": "Connection timeout"}
         except Exception as e:

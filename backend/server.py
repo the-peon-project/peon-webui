@@ -16,7 +16,7 @@ from core.config import setup_logging, CORS_ORIGINS, SYNC_INTERVAL
 from core.database import init_db, get_db, dict_from_row
 from core.security import decode_token
 from core.websocket import chat_manager
-from core.orchestrator_url import resolve_orchestrator_url
+from core.orchestrator_url import resolve_orchestrator_url, resolve_orchestrator_url_candidates
 from services.test_seed import ensure_test_users
 
 # Routes
@@ -44,37 +44,41 @@ async def sync_orchestrator_servers():
                     try:
                         orch_dict = dict_from_row(orch)
                         headers = {"X-Api-Key": orch_dict['api_key']}
-                        base_url = resolve_orchestrator_url(orch_dict['base_url'])
-                        url = f"{base_url}/api/v1/servers"
-                        
-                        async with session.get(url, headers=headers, timeout=30) as response:
-                            if response.status == 200:
-                                servers = await response.json()
-                                
-                                conn = get_db()
-                                cursor = conn.cursor()
-                                
-                                # Clear old cache
-                                cursor.execute("DELETE FROM cached_servers WHERE orchestrator_id = ?", 
-                                             (orch_dict['id'],))
-                                
-                                # Insert new cache
-                                for server in servers:
-                                    server_id = f"{orch_dict['id']}_{server.get('game_uid', '')}_{server.get('servername', '')}"
-                                    cursor.execute(
-                                        "INSERT INTO cached_servers (id, orchestrator_id, server_data, synced_at) VALUES (?, ?, ?, ?)",
-                                        (server_id, orch_dict['id'], json.dumps(server), datetime.now(timezone.utc).isoformat())
-                                    )
-                                
-                                cursor.execute(
-                                    "UPDATE orchestrators SET last_synced = ? WHERE id = ?",
-                                    (datetime.now(timezone.utc).isoformat(), orch_dict['id'])
-                                )
-                                
-                                conn.commit()
-                                conn.close()
-                                
-                                logger.info(f"Synced {len(servers)} servers from {orch_dict['name']}")
+                        for base_url in resolve_orchestrator_url_candidates(orch_dict['base_url']):
+                            url = f"{base_url}/api/v1/servers"
+
+                            try:
+                                async with session.get(url, headers=headers, timeout=30) as response:
+                                    if response.status == 200:
+                                        servers = await response.json()
+
+                                        conn = get_db()
+                                        cursor = conn.cursor()
+
+                                        # Clear old cache
+                                        cursor.execute("DELETE FROM cached_servers WHERE orchestrator_id = ?",
+                                                     (orch_dict['id'],))
+
+                                        # Insert new cache
+                                        for server in servers:
+                                            server_id = f"{orch_dict['id']}_{server.get('game_uid', '')}_{server.get('servername', '')}"
+                                            cursor.execute(
+                                                "INSERT INTO cached_servers (id, orchestrator_id, server_data, synced_at) VALUES (?, ?, ?, ?)",
+                                                (server_id, orch_dict['id'], json.dumps(server), datetime.now(timezone.utc).isoformat())
+                                            )
+
+                                        cursor.execute(
+                                            "UPDATE orchestrators SET last_synced = ? WHERE id = ?",
+                                            (datetime.now(timezone.utc).isoformat(), orch_dict['id'])
+                                        )
+
+                                        conn.commit()
+                                        conn.close()
+
+                                        logger.info(f"Synced {len(servers)} servers from {orch_dict['name']}")
+                                        break
+                            except (asyncio.TimeoutError, aiohttp.ClientError):
+                                continue
                     except Exception as e:
                         logger.error(f"Failed to sync orchestrator {orch_dict['name']}: {e}")
         except Exception as e:

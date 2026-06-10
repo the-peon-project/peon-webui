@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from core.database import get_db, dict_from_row
 from core.security import get_current_user, get_current_admin_user
-from core.orchestrator_url import resolve_orchestrator_url
+from core.orchestrator_url import resolve_orchestrator_url, resolve_orchestrator_url_candidates
 from services.orchestrator import OrchestratorService
 from services.audit import AuditService
 
@@ -57,40 +57,56 @@ async def get_servers(orch_id: str, current_user: dict = Depends(get_current_use
         timeout = aiohttp.ClientTimeout(total=120, connect=10, sock_read=110)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key']}
-            base_url = resolve_orchestrator_url(orch['base_url'])
-            url = f"{base_url}/api/v1/servers"
-            
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    servers = await response.json()
-                    
-                    # Filter servers for non-admin users
-                    if current_user['role'] != 'admin':
-                        allowed_servers = OrchestratorService.get_user_server_links(current_user['id'], orch_id)
-                        if allowed_servers:  # If user has specific server links, filter
-                            servers = [s for s in servers if f"{s.get('game_uid')}.{s.get('servername')}" in allowed_servers]
-                    
-                    # Update cache
-                    conn = get_db()
-                    cursor = conn.cursor()
-                    now = datetime.now(timezone.utc).isoformat()
-                    
-                    cursor.execute("DELETE FROM cached_servers WHERE orchestrator_id = ?", (orch_id,))
-                    for server in servers:
-                        server_id = f"{orch_id}_{server.get('game_uid', '')}_{server.get('servername', '')}"
-                        cursor.execute(
-                            "INSERT INTO cached_servers (id, orchestrator_id, server_data, synced_at) VALUES (?, ?, ?, ?)",
-                            (server_id, orch_id, json.dumps(server), now)
-                        )
-                    cursor.execute("UPDATE orchestrators SET last_synced = ? WHERE id = ?", (now, orch_id))
-                    conn.commit()
-                    conn.close()
-                    
-                    return {"servers": servers, "last_synced": now}
-                else:
-                    raise HTTPException(status_code=response.status, detail="Failed to fetch servers")
-    except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="Orchestrator request timeout")
+            last_error = None
+
+            for base_url in resolve_orchestrator_url_candidates(orch['base_url']):
+                url = f"{base_url}/api/v1/servers"
+
+                try:
+                    async with session.get(url, headers=headers) as response:
+                        if response.status == 200:
+                            servers = await response.json()
+
+                            # Filter servers for non-admin users
+                            if current_user['role'] != 'admin':
+                                allowed_servers = OrchestratorService.get_user_server_links(current_user['id'], orch_id)
+                                if allowed_servers:  # If user has specific server links, filter
+                                    servers = [s for s in servers if f"{s.get('game_uid')}.{s.get('servername')}" in allowed_servers]
+
+                            # Update cache
+                            conn = get_db()
+                            cursor = conn.cursor()
+                            now = datetime.now(timezone.utc).isoformat()
+
+                            cursor.execute("DELETE FROM cached_servers WHERE orchestrator_id = ?", (orch_id,))
+                            for server in servers:
+                                server_id = f"{orch_id}_{server.get('game_uid', '')}_{server.get('servername', '')}"
+                                cursor.execute(
+                                    "INSERT INTO cached_servers (id, orchestrator_id, server_data, synced_at) VALUES (?, ?, ?, ?)",
+                                    (server_id, orch_id, json.dumps(server), now)
+                                )
+                            cursor.execute("UPDATE orchestrators SET last_synced = ? WHERE id = ?", (now, orch_id))
+                            conn.commit()
+                            conn.close()
+
+                            return {"servers": servers, "last_synced": now}
+
+                        if response.status == 401:
+                            raise HTTPException(status_code=401, detail="Invalid API key")
+
+                        last_error = HTTPException(status_code=response.status, detail="Failed to fetch servers")
+                except (asyncio.TimeoutError, aiohttp.ClientError) as exc:
+                    last_error = exc
+                    continue
+
+            if isinstance(last_error, HTTPException):
+                raise last_error
+            if isinstance(last_error, asyncio.TimeoutError):
+                raise HTTPException(status_code=504, detail="Orchestrator request timeout")
+            if last_error:
+                raise HTTPException(status_code=500, detail=f"Error fetching servers: {str(last_error)}")
+
+            raise HTTPException(status_code=504, detail="Orchestrator request timeout")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching servers: {str(e)}")
 
