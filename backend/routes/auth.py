@@ -1,18 +1,33 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from datetime import timedelta
-import uuid
-from datetime import datetime, timezone
 
 from core.database import get_db, dict_from_row
 from core.security import (
     verify_password, get_password_hash, create_access_token, 
-    get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+    get_current_user, get_current_admin_user, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from core.config import ROLE_PERMISSIONS
-from models.user import UserLogin, Token, PasswordChange
+from models.user import UserCreate, UserLogin, Token, PasswordChange
 from services.audit import AuditService
+from services.user import UserService
 
 router = APIRouter(prefix="/auth")
+
+
+def _token_response(user: dict, access_token: str) -> dict:
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": {
+            "id": user['id'],
+            "username": user['username'],
+            "email": user['email'],
+            "role": user['role'],
+            "is_chat_banned": bool(user.get('is_chat_banned', 0)),
+            "created_at": user['created_at']
+        }
+    }
 
 @router.post("/login", response_model=Token)
 async def login(credentials: UserLogin, request: Request):
@@ -47,19 +62,8 @@ async def login(credentials: UserLogin, request: Request):
         details='User logged in',
         ip_address=ip
     )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": {
-            "id": user_dict['id'],
-            "username": user_dict['username'],
-            "email": user_dict['email'],
-            "role": user_dict['role'],
-            "is_chat_banned": bool(user_dict.get('is_chat_banned', 0)),
-            "created_at": user_dict['created_at']
-        }
-    }
+
+    return _token_response(user_dict, access_token)
 
 @router.get("/me")
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
@@ -81,18 +85,54 @@ async def refresh_token(current_user: dict = Depends(get_current_user)):
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": {
-            "id": current_user['id'],
-            "username": current_user['username'],
-            "email": current_user['email'],
-            "role": current_user['role'],
-            "is_chat_banned": bool(current_user.get('is_chat_banned', 0)),
-            "created_at": current_user['created_at']
-        }
-    }
+    return _token_response(current_user, access_token)
+
+
+@router.post("/register")
+async def register_user(
+    user_data: UserCreate,
+    request: Request,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Create a new user via the legacy auth namespace.
+
+    This preserves older clients/tests that still post to /api/auth/register
+    while keeping admin-only creation semantics.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM users WHERE username = ?", (user_data.username,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    cursor.execute("SELECT id FROM users WHERE email = ?", (user_data.email,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Email already exists")
+
+    conn.close()
+
+    user = UserService.create_user(
+        username=user_data.username,
+        email=user_data.email,
+        password=user_data.password,
+        role=user_data.role,
+    )
+
+    AuditService.log(
+        user_id=current_user['id'],
+        username=current_user['username'],
+        action_type='create',
+        category='user',
+        target_type='user',
+        target_id=user['id'],
+        details=f"Created user via auth register: {user_data.username} with role: {user_data.role}",
+        ip_address=request.client.host if request.client else None,
+    )
+
+    return user
 
 @router.get("/permissions")
 async def get_permissions(current_user: dict = Depends(get_current_user)):

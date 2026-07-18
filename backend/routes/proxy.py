@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import JSONResponse
 from typing import Dict, Any, Optional
 import json
 import os
@@ -22,6 +24,55 @@ class DeployServerRequest(BaseModel):
 
 class UpdateServerRequest(BaseModel):
     mode: str = "full"  # full, quick, etc.
+
+
+@router.get("/{orch_id}/openapi.json")
+async def get_orchestrator_openapi(orch_id: str, current_user: dict = Depends(get_current_user)):
+    """Return OpenAPI spec from a specific orchestrator."""
+    if not OrchestratorService.check_user_access(current_user['id'], orch_id, current_user['role']):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    orch = OrchestratorService.get_by_id(orch_id)
+    if not orch or not orch.get('is_active'):
+        raise HTTPException(status_code=404, detail="Orchestrator not found or inactive")
+
+    timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=20)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        headers = {"X-Api-Key": orch['api_key']}
+        last_error = None
+
+        for base_url in resolve_orchestrator_url_candidates(orch['base_url']):
+            url = f"{base_url}/openapi.json"
+            try:
+                async with session.get(url, headers=headers) as response:
+                    if response.status == 200:
+                        payload = await response.json()
+                        return JSONResponse(content=payload)
+                    last_error = HTTPException(status_code=response.status, detail="Failed to fetch OpenAPI spec")
+            except (asyncio.TimeoutError, aiohttp.ClientError) as exc:
+                last_error = exc
+                continue
+
+        if isinstance(last_error, HTTPException):
+            raise last_error
+        if isinstance(last_error, asyncio.TimeoutError):
+            raise HTTPException(status_code=504, detail="Orchestrator request timeout")
+        raise HTTPException(status_code=500, detail="Unable to retrieve orchestrator OpenAPI spec")
+
+
+@router.get("/{orch_id}/docs", include_in_schema=False)
+async def get_orchestrator_swagger_ui(orch_id: str, current_user: dict = Depends(get_current_user)):
+    """Serve Swagger UI for a specific orchestrator through the WebUI sub-path."""
+    if not OrchestratorService.check_user_access(current_user['id'], orch_id, current_user['role']):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not OrchestratorService.get_by_id(orch_id):
+        raise HTTPException(status_code=404, detail="Orchestrator not found")
+
+    return get_swagger_ui_html(
+        openapi_url=f"/api/proxy/{orch_id}/openapi.json",
+        title=f"PEON Orchestrator Docs - {orch_id}",
+    )
 
 @router.get("/plans")
 async def get_plans(current_user: dict = Depends(get_current_user)):

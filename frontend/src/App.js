@@ -657,8 +657,18 @@ const Dashboard = ({ user, onLogout }) => {
                   rel="noopener noreferrer"
                   className="gold-button px-6 py-3 rounded inline-flex items-center gap-2"
                 >
-                  <Server className="w-5 h-5" /> API Documentation
+                  <Server className="w-5 h-5" /> WebUI API Documentation
                 </a>
+                {selectedOrch && (
+                  <a
+                    href={`/api/proxy/${selectedOrch}/docs`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="gray-button px-6 py-3 rounded inline-flex items-center gap-2"
+                  >
+                    <Server className="w-5 h-5" /> Selected Orchestrator Swagger
+                  </a>
+                )}
               </div>
             )}
 
