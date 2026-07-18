@@ -4,7 +4,7 @@ import { Modal } from '../common/Modal';
 import { LoadingSpinner } from '../common/Loading';
 import { api } from '../../utils/api';
 import { formatKeyName, getValueColor } from '../../utils/jsonParser';
-import { handleLogoError } from '../../utils/logos';
+import { getGameLogoUrl, handleLogoError } from '../../utils/logos';
 
 /**
  * Recursive JSON item renderer
@@ -115,7 +115,7 @@ export const ServerInfoModal = ({ server, orchestratorId, onClose }) => {
           </span>
         </div>
         <img 
-          src={`/game-logos/${server.game_uid}.png`}
+          src={getGameLogoUrl(server.game_uid)}
           alt={server.game_uid}
           className="game-logo-large"
           onError={handleLogoError}

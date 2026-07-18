@@ -1,12 +1,13 @@
+import { BACKEND_URL } from './api';
+
 /**
  * Get the logo URL for a game, supporting multiple file formats
  * @param {string} gameUid - The game identifier
  * @returns {string} The logo URL
  */
 export const getGameLogoUrl = (gameUid) => {
-  // The backend/orchestrator should handle logo resolution
-  // We'll try png first, then fallback on error
-  return `/game-logos/${gameUid}.png`;
+  const base = (BACKEND_URL || '').replace(/\/$/, '');
+  return `${base}/game-logos/${gameUid}.png`;
 };
 
 /**
@@ -39,6 +40,13 @@ export const findLogoUrl = async (baseUrl, gameUid) => {
 export const handleLogoError = (event, gameUid) => {
   const img = event.target;
   const currentSrc = img.src;
+
+  if (img.dataset.logoFallbackApplied === '1') {
+    img.style.display = 'none';
+    return;
+  }
+
+  img.dataset.logoFallbackApplied = '1';
   
   // Find current extension
   const currentExt = currentSrc.split('.').pop();

@@ -14,6 +14,7 @@ from core.security import get_current_user, get_current_admin_user
 from core.orchestrator_url import resolve_orchestrator_url, resolve_orchestrator_url_candidates
 from services.orchestrator import OrchestratorService
 from services.audit import AuditService
+from services.game_logos import ensure_logo_for_game
 
 router = APIRouter(prefix="/proxy")
 
@@ -88,6 +89,8 @@ async def get_plans(current_user: dict = Depends(get_current_user)):
                     with open(plan_file, 'r') as f:
                         plan_data = json.load(f)
                         plan_data['game_uid'] = item
+                        # Hydrate and cache a game logo so frontend cards resolve immediately.
+                        ensure_logo_for_game(item)
                         plans.append(plan_data)
                 except Exception:
                     pass
@@ -249,6 +252,12 @@ async def deploy_server(
         "servername": deploy_data.server_name,
         **deploy_data.environment
     }
+
+    # Best-effort logo hydration for newly deployed recipe/game combinations.
+    try:
+        ensure_logo_for_game(deploy_data.game_uid)
+    except Exception:
+        pass
     
     try:
         timeout = aiohttp.ClientTimeout(total=180, connect=10, sock_read=170)

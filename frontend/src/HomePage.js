@@ -6,6 +6,7 @@ import {
 import { api, BACKEND_URL } from './utils/api';
 import { ChatMessage, ChatInput } from './components/chat';
 import { LoadingSpinner, Skeleton } from './components/common/Loading';
+import { getGameLogoUrl } from './utils/logos';
 
 // Server Dashboard Overview Component
 const DashboardOverview = ({ serversData, orchestrators }) => {
@@ -201,7 +202,7 @@ const ActiveServersList = ({ serversData, onServerClick }) => {
           style={{ animationDelay: `${idx * 50}ms` }}
         >
           <img 
-            src={`/game-logos/${server.game_uid}.png`}
+            src={getGameLogoUrl(server.game_uid)}
             alt={server.game_uid}
             className="w-10 h-10 object-contain rounded"
             onError={(e) => e.target.style.display = 'none'}

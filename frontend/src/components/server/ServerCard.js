@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Play, Square, RefreshCw, ArrowUpCircle, Info, Lock } from 'lucide-react';
 import { ServerHealthStats } from './ServerHealthStats';
-import { handleLogoError } from '../../utils/logos';
+import { getGameLogoUrl, handleLogoError } from '../../utils/logos';
 
 /**
  * Server Card Component (Grid View) - Logo on right
@@ -44,7 +44,7 @@ export const ServerCard = ({
         </div>
         <div className="server-card-logo">
           <img 
-            src={`/game-logos/${server.game_uid}.png`}
+            src={getGameLogoUrl(server.game_uid)}
             alt={server.game_uid}
             className="game-logo-right"
             onError={handleLogoError}
@@ -149,7 +149,7 @@ export const ServerListItem = ({
       data-testid="server-list-item"
     >
       <img 
-        src={`/game-logos/${server.game_uid}.png`}
+        src={getGameLogoUrl(server.game_uid)}
         alt={server.game_uid}
         className="w-10 h-10 object-contain"
         onError={handleLogoError}

@@ -2,7 +2,8 @@
 PEON Dashboard - Backend Server
 A modular FastAPI application for managing game servers.
 """
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException
+from fastapi.responses import FileResponse
 from starlette.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
@@ -18,6 +19,7 @@ from core.security import decode_token
 from core.websocket import chat_manager
 from core.orchestrator_url import resolve_orchestrator_url, resolve_orchestrator_url_candidates
 from services.test_seed import ensure_test_users
+from services.game_logos import resolve_logo_path
 
 # Routes
 from routes import api_router
@@ -117,6 +119,36 @@ app = FastAPI(
 
 # Include API routes
 app.include_router(api_router)
+
+_LOGO_MEDIA_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".svg": "image/svg+xml",
+    ".gif": "image/gif",
+}
+
+
+@app.get("/game-logos/{logo_name:path}", include_in_schema=False)
+async def get_game_logo(logo_name: str):
+    """Serve game logos with automatic format/source resolution."""
+    if "/" in logo_name or ".." in logo_name:
+        raise HTTPException(status_code=400, detail="Invalid logo path")
+
+    if "." in logo_name:
+        game_uid, requested_ext = logo_name.rsplit(".", 1)
+    else:
+        game_uid, requested_ext = logo_name, None
+
+    logo_path = resolve_logo_path(game_uid, requested_ext)
+    if not logo_path:
+        raise HTTPException(status_code=404, detail="Logo not found")
+
+    return FileResponse(
+        path=str(logo_path),
+        media_type=_LOGO_MEDIA_TYPES.get(logo_path.suffix.lower(), "application/octet-stream"),
+    )
 
 # WebSocket endpoint for real-time chat
 @app.websocket("/api/ws/chat")

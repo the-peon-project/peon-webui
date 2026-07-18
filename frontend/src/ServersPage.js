@@ -7,7 +7,7 @@ import {
 import { api } from './utils/api';
 import { ServerInfoModal, ServerUpdateModal, ServerHealthStats, ServerConsoleModal } from './components/server';
 import { LoadingSpinner, SkeletonCard } from './components/common/Loading';
-import { handleLogoError } from './utils/logos';
+import { getGameLogoUrl, handleLogoError } from './utils/logos';
 
 // Server Card Component (Grid View) - Logo on Right
 const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, onConsole, canManageServers }) => {
@@ -35,7 +35,7 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
           </span>
         </div>
         <img 
-          src={`/game-logos/${server.game_uid}.png`}
+          src={getGameLogoUrl(server.game_uid)}
           alt={server.game_uid}
           className="game-logo-right"
           onError={handleLogoError}
@@ -150,7 +150,7 @@ const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, o
   return (
     <div className="stone-texture p-3 rounded flex items-center gap-3 animate-fade-in" data-testid="server-list-item">
       <img 
-        src={`/game-logos/${server.game_uid}.png`}
+        src={getGameLogoUrl(server.game_uid)}
         alt={server.game_uid}
         className="w-10 h-10 object-contain"
         onError={handleLogoError}
@@ -418,7 +418,7 @@ const DeployServerModal = ({ orchestrators, plans, loadingPlans, onClose, onDepl
                   }`}
                 >
                   <img 
-                    src={`/game-logos/${plan.game_uid}.png`}
+                    src={getGameLogoUrl(plan.game_uid)}
                     alt={plan.game_uid}
                     className="w-12 h-12 object-contain mx-auto mb-2"
                     onError={handleLogoError}
