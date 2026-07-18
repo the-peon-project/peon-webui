@@ -8,7 +8,7 @@ import { api } from './utils/api';
 import { LoadingSpinner } from './components/common/Loading';
 
 // User Card Component
-const UserCard = ({ user, orchestrators, onEdit, onDelete, onResetPassword, onLink, onUnlink, onBan, onUnban }) => {
+const UserCard = ({ user, currentUser, orchestrators, onEdit, onDelete, onResetPassword, onLink, onUnlink, onBan, onUnban }) => {
   const [showLinks, setShowLinks] = useState(false);
 
   const getRoleBadge = (role) => {
@@ -117,7 +117,7 @@ const UserCard = ({ user, orchestrators, onEdit, onDelete, onResetPassword, onLi
           </button>
         )}
         
-        {user.role !== 'admin' && (
+        {currentUser?.id !== user.id && (
           <button
             onClick={() => onDelete(user.id)}
             className="gray-button px-3 py-1.5 rounded text-sm flex items-center gap-1 text-red-400"
@@ -443,7 +443,7 @@ const LinkUserModal = ({ user, orchestrators, onClose, onLinkOrch, onLinkServer 
 };
 
 // Main Users Page
-export const UsersPage = ({ orchestrators }) => {
+export const UsersPage = ({ orchestrators, currentUser }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -591,6 +591,7 @@ export const UsersPage = ({ orchestrators }) => {
             <UserCard
               key={user.id}
               user={user}
+              currentUser={currentUser}
               orchestrators={orchestrators}
               onEdit={setEditingUser}
               onDelete={handleDeleteUser}

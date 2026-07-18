@@ -625,7 +625,7 @@ const Dashboard = ({ user, onLogout }) => {
         )}
 
         {activeTab === 'users' && permissions?.can_manage_users && (
-          <UsersPage orchestrators={orchestrators} />
+          <UsersPage orchestrators={orchestrators} currentUser={user} />
         )}
 
         {activeTab === 'admin' && user.role === 'admin' && (

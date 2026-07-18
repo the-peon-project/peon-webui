@@ -10,7 +10,7 @@ import { LoadingSpinner, SkeletonCard } from './components/common/Loading';
 import { handleLogoError } from './utils/logos';
 
 // Server Card Component (Grid View) - Logo on Right
-const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onConsole, canManageServers }) => {
+const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, onConsole, canManageServers }) => {
   const serverUid = `${server.game_uid}.${server.servername}`;
   const isRunning = server.container_state === 'running';
   const isStopped = ['exited', 'created'].includes(server.container_state);
@@ -99,6 +99,20 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onCon
                 </>
               )}
             </button>
+
+            <button
+              onClick={() => onDelete?.(orchId, serverUid)}
+              disabled={loading[`${orchId}_${serverUid}_delete`]}
+              className="red-button py-2 rounded text-sm flex items-center justify-center gap-1"
+            >
+              {loading[`${orchId}_${serverUid}_delete`] ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Trash2 className="w-3 h-3" /> Delete
+                </>
+              )}
+            </button>
           </>
         ) : (
           <div className="col-span-2 text-center py-2 text-sm text-gray-500 flex items-center justify-center gap-2">
@@ -129,7 +143,7 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onCon
 };
 
 // Server List Item (List View)
-const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, canManageServers }) => {
+const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, canManageServers }) => {
   const serverUid = `${server.game_uid}.${server.servername}`;
   const isRunning = server.container_state === 'running';
 
@@ -167,6 +181,13 @@ const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, c
             >
               <ArrowUpCircle className="w-4 h-4" />
             </button>
+            <button
+              onClick={() => onDelete?.(orchId, serverUid)}
+              disabled={loading[`${orchId}_${serverUid}_delete`]}
+              className="red-button px-3 py-1 rounded text-sm"
+            >
+              {loading[`${orchId}_${serverUid}_delete`] ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            </button>
           </>
         )}
         <button
@@ -189,6 +210,7 @@ const OrchestratorSection = ({
   onAction, 
   onInfo, 
   onUpdate,
+  onDeleteServer,
   onConsole,
   onEdit,
   onDelete,
@@ -272,6 +294,7 @@ const OrchestratorSection = ({
                   onAction={onAction}
                   onInfo={onInfo}
                   onUpdate={onUpdate}
+                  onDelete={onDeleteServer}
                   onConsole={onConsole}
                   canManageServers={canManageServers}
                 />
@@ -288,6 +311,7 @@ const OrchestratorSection = ({
                   onAction={onAction}
                   onInfo={onInfo}
                   onUpdate={onUpdate}
+                  onDelete={onDeleteServer}
                   canManageServers={canManageServers}
                 />
               ))}
@@ -707,6 +731,12 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
     loadServers();
   };
 
+  const handleDeleteServer = async (orchId, serverUid) => {
+    if (!window.confirm(`Delete server ${serverUid}? This action cannot be undone.`)) return;
+    await handleServerAction(orchId, 'delete', serverUid);
+    loadServers();
+  };
+
   // Handle orchestrator save
   const handleSaveOrchestrator = async (formData, orchId) => {
     if (orchId) {
@@ -812,6 +842,7 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
             onAction={handleServerAction}
             onInfo={(server) => { setInfoServer(server); setCurrentOrchId(orch.id); }}
             onUpdate={(server) => { setUpdateServer(server); setCurrentOrchId(orch.id); }}
+            onDeleteServer={handleDeleteServer}
             onConsole={(server) => { setConsoleServer(server); setCurrentOrchId(orch.id); }}
             onEdit={(orch) => { setEditingOrch(orch); setShowOrchModal(true); }}
             onDelete={handleDeleteOrchestrator}
