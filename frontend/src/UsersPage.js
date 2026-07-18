@@ -26,7 +26,7 @@ const UserCard = ({ user, currentUser, orchestrators, onEdit, onDelete, onResetP
     <div className="stone-texture p-4 rounded-lg animate-fade-in">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-purple-900/50 flex items-center justify-center text-xl font-bold">
+          <div className="w-12 h-12 rounded-full bg-slate-900/50 flex items-center justify-center text-xl font-bold">
             {user.username.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -561,7 +561,7 @@ export const UsersPage = ({ orchestrators, currentUser }) => {
       {/* User Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="stat-card">
-          <div className="stat-value text-purple-400">{users.length}</div>
+          <div className="stat-value text-sky-400">{users.length}</div>
           <div className="stat-label">Total Users</div>
         </div>
         <div className="stat-card">

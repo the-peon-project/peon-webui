@@ -15,7 +15,7 @@ const CATEGORY_ICONS = {
 const CATEGORY_COLORS = {
   user: 'text-blue-400 bg-blue-900/30',
   server: 'text-green-400 bg-green-900/30',
-  chat: 'text-purple-400 bg-purple-900/30',
+  chat: 'text-sky-400 bg-sky-900/30',
   session: 'text-yellow-400 bg-yellow-900/30',
   auth: 'text-red-400 bg-red-900/30',
   system: 'text-gray-400 bg-gray-900/30',
@@ -25,7 +25,7 @@ const ACTION_COLORS = {
   create: 'text-green-400',
   update: 'text-blue-400',
   delete: 'text-red-400',
-  login: 'text-purple-400',
+  login: 'text-sky-400',
   logout: 'text-gray-400',
   action: 'text-yellow-400',
   ban: 'text-red-400',

@@ -2,6 +2,47 @@
 
 A modern web application for managing game servers using the PEON ecosystem (peon-orchestrator, peon-warplans).
 
+## Brand Guide
+
+PEON's visual identity should feel like a war camp command console: practical, sturdy, and slightly medieval without becoming ornamental.
+
+### Design Principles
+
+- Use slate, steel, bone, green, and light blue as the core palette.
+- Avoid purple, violet, indigo, and neon-magenta accents in product UI.
+- Keep surfaces grounded and functional: stone-like panels, beveled edges, and clear hierarchy.
+- Reserve bright green for success/online states, red for danger/offline states, and light blue for informational emphasis.
+- Prefer readable, high-contrast layouts over decorative flourishes.
+
+### Typography
+
+- Use strong display faces for headings and compact readable body text.
+- In classic mode, typography may feel pixel-era and game-like.
+- In clean mode, typography should stay crisp and modern.
+
+### Shape Language
+
+- Rounded corners should be modest in clean mode and squared off in classic mode.
+- Panels, modals, buttons, and cards should look like they belong to the same control surface.
+- Shadows should imply depth but never overpower content.
+
+### Visual States
+
+- Success: green.
+- Warning: amber or gold.
+- Error: red.
+- Informational / active selection: slate or light blue.
+
+### Theme Modes
+
+- `clean`: the current production default, modern and restrained.
+- `horde`: a fortified warcamp theme with iron, bone, leather, and battle-green accents.
+- `alliance`: a human castle theme with stone, steel, royal blue, and bannered symmetry.
+
+Theme controls live in the Admin panel and are restricted to admin users.
+
+All new UI should build from these rules before introducing any new visual treatment.
+
 ## Features
 
 - **Server Management**: Start, stop, restart, and update game servers

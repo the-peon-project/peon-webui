@@ -6,17 +6,20 @@ import json
 import os
 import asyncio
 import aiohttp
+from urllib.parse import quote_plus
 from datetime import datetime, timezone
 from pydantic import BaseModel
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from core.database import get_db, dict_from_row
-from core.security import get_current_user, get_current_admin_user
+from core.security import get_current_user, get_current_admin_user, decode_token
 from core.orchestrator_url import resolve_orchestrator_url, resolve_orchestrator_url_candidates
 from services.orchestrator import OrchestratorService
 from services.audit import AuditService
 from services.game_logos import ensure_logo_for_game
 
 router = APIRouter(prefix="/proxy")
+docs_security = HTTPBearer(auto_error=False)
 
 class DeployServerRequest(BaseModel):
     game_uid: str
@@ -27,9 +30,39 @@ class UpdateServerRequest(BaseModel):
     mode: str = "full"  # full, quick, etc.
 
 
+def _resolve_docs_user(
+    token: Optional[str],
+    credentials: Optional[HTTPAuthorizationCredentials]
+) -> dict:
+    bearer_token = token or (credentials.credentials if credentials else None)
+    if not bearer_token:
+        raise HTTPException(status_code=401, detail="Missing authentication token")
+
+    payload = decode_token(bearer_token)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return dict_from_row(user)
+
+
 @router.get("/{orch_id}/openapi.json")
-async def get_orchestrator_openapi(orch_id: str, current_user: dict = Depends(get_current_user)):
+async def get_orchestrator_openapi(
+    orch_id: str,
+    token: Optional[str] = None,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(docs_security),
+):
     """Return OpenAPI spec from a specific orchestrator."""
+    current_user = _resolve_docs_user(token, credentials)
     if not OrchestratorService.check_user_access(current_user['id'], orch_id, current_user['role']):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -62,8 +95,13 @@ async def get_orchestrator_openapi(orch_id: str, current_user: dict = Depends(ge
 
 
 @router.get("/{orch_id}/docs", include_in_schema=False)
-async def get_orchestrator_swagger_ui(orch_id: str, current_user: dict = Depends(get_current_user)):
+async def get_orchestrator_swagger_ui(
+    orch_id: str,
+    token: Optional[str] = None,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(docs_security),
+):
     """Serve Swagger UI for a specific orchestrator through the WebUI sub-path."""
+    current_user = _resolve_docs_user(token, credentials)
     if not OrchestratorService.check_user_access(current_user['id'], orch_id, current_user['role']):
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -71,7 +109,7 @@ async def get_orchestrator_swagger_ui(orch_id: str, current_user: dict = Depends
         raise HTTPException(status_code=404, detail="Orchestrator not found")
 
     return get_swagger_ui_html(
-        openapi_url=f"/api/proxy/{orch_id}/openapi.json",
+        openapi_url=f"/api/proxy/{orch_id}/openapi.json?token={quote_plus(token or credentials.credentials)}",
         title=f"PEON Orchestrator Docs - {orch_id}",
     )
 

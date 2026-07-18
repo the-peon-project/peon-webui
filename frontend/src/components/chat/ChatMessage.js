@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 const MarkdownLink = ({ node, ...props }) => (
   <a 
     {...props} 
-    className="text-purple-400 hover:text-purple-300 underline"
+    className="text-sky-400 hover:text-sky-300 underline"
     target="_blank"
     rel="noopener noreferrer"
   />
@@ -14,7 +14,7 @@ const MarkdownLink = ({ node, ...props }) => (
 
 const MarkdownCode = ({ node, inline, ...props }) => (
   inline 
-    ? <code className="bg-black/30 px-1 rounded text-purple-300 text-xs" {...props} />
+    ? <code className="bg-black/30 px-1 rounded text-sky-300 text-xs" {...props} />
     : <code className="block bg-black/30 p-2 rounded my-1 overflow-x-auto" {...props} />
 );
 
@@ -84,7 +84,7 @@ export const EMOJI_DATA = {
     { emoji: '💛', name: 'yellow_heart', keywords: ['love', 'yellow'] },
     { emoji: '💚', name: 'green_heart', keywords: ['love', 'green'] },
     { emoji: '💙', name: 'blue_heart', keywords: ['love', 'blue'] },
-    { emoji: '💜', name: 'purple_heart', keywords: ['love', 'purple'] },
+    { emoji: '💜', name: 'heart', keywords: ['love', 'heart'] },
     { emoji: '🖤', name: 'black_heart', keywords: ['love', 'black'] },
     { emoji: '💔', name: 'broken_heart', keywords: ['sad', 'heartbreak'] },
     { emoji: '💕', name: 'two_hearts', keywords: ['love'] },
@@ -267,7 +267,7 @@ export const EmojiPicker = ({ onSelect, onClose }) => {
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
               className={`flex-1 py-2 text-lg hover:bg-gray-800 transition-colors ${
-                activeCategory === cat.id ? 'bg-gray-800 border-b-2 border-purple-500' : ''
+                activeCategory === cat.id ? 'bg-gray-800 border-b-2 border-sky-500' : ''
               }`}
               title={cat.id}
             >
@@ -368,13 +368,13 @@ export const ChatMessage = ({
   return (
     <div 
       className={`chat-message group py-2 px-3 rounded-lg transition-colors ${
-        isOwn ? 'bg-purple-900/20' : ''
+        isOwn ? 'bg-slate-900/20' : ''
       }`}
     >
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className={`font-semibold text-sm ${isOwn ? 'text-purple-400' : 'text-gray-300'}`}>
+            <span className={`font-semibold text-sm ${isOwn ? 'text-sky-400' : 'text-gray-300'}`}>
               {message.username}
             </span>
             <span className="text-xs text-gray-500">

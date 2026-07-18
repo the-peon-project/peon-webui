@@ -124,13 +124,13 @@ export const FeatureTogglesPanel = ({ onFeaturesChange }) => {
               key={feature.id}
               className={`p-4 rounded-lg transition-all ${
                 isEnabled 
-                  ? 'bg-purple-900/30 border border-purple-700/50' 
+                  ? 'bg-slate-900/30 border border-slate-600/50' 
                   : 'bg-black/20 border border-gray-800'
               }`}
             >
               <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${isEnabled ? 'bg-purple-800/50' : 'bg-gray-800/50'}`}>
-                  <Icon className={`w-5 h-5 ${isEnabled ? 'text-purple-400' : 'text-gray-500'}`} />
+                <div className={`p-3 rounded-lg ${isEnabled ? 'bg-slate-800/50' : 'bg-gray-800/50'}`}>
+                  <Icon className={`w-5 h-5 ${isEnabled ? 'text-sky-400' : 'text-gray-500'}`} />
                 </div>
                 
                 <div className="flex-1">

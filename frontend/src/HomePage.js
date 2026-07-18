@@ -40,7 +40,7 @@ const DashboardOverview = ({ serversData, orchestrators }) => {
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="stat-card">
-          <div className="stat-value text-purple-400">{totalServers}</div>
+          <div className="stat-value text-sky-400">{totalServers}</div>
           <div className="stat-label">Total Servers</div>
         </div>
         

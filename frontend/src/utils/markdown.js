@@ -18,7 +18,7 @@ export const parseMarkdown = (text) => {
   result = result.replace(/```([\s\S]*?)```/g, '<pre class="bg-black/30 p-2 rounded my-1 text-sm overflow-x-auto">$1</pre>');
   
   // Inline code
-  result = result.replace(/`([^`]+)`/g, '<code class="bg-black/30 px-1 rounded text-purple-300">$1</code>');
+  result = result.replace(/`([^`]+)`/g, '<code class="bg-black/30 px-1 rounded text-sky-300">$1</code>');
   
   // Bold
   result = result.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold">$1</strong>');
@@ -32,13 +32,13 @@ export const parseMarkdown = (text) => {
   // Links
   result = result.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g, 
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:text-purple-300 underline">$1</a>'
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline">$1</a>'
   );
   
   // Auto-link URLs
   result = result.replace(
     /(?<!["\(])https?:\/\/[^\s<]+/g,
-    '<a href="$&" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:text-purple-300 underline">$&</a>'
+    '<a href="$&" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline">$&</a>'
   );
   
   // Line breaks

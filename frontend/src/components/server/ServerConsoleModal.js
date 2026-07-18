@@ -168,7 +168,7 @@ export const ServerConsoleModal = ({ server, orchestratorId, onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-purple-800/50">
+        <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <Terminal className="w-6 h-6 text-green-400" />
             <div>
@@ -253,7 +253,7 @@ export const ServerConsoleModal = ({ server, orchestratorId, onClose }) => {
           </div>
         )}
 
-        <div className="p-2 border-t border-purple-800/50 text-xs text-gray-500 flex items-center justify-between">
+        <div className="p-2 border-t border-slate-700/50 text-xs text-gray-500 flex items-center justify-between">
           <span>{logs.length} lines</span>
           <span>{paused ? '⏸ Paused' : '▶ Auto-scrolling'}</span>
         </div>

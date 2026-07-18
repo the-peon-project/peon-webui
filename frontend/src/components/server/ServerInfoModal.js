@@ -55,7 +55,7 @@ const JsonItem = ({ itemKey, value, depth = 0 }) => {
       </button>
       
       {isExpanded && hasChildren && (
-        <div className="json-indent ml-2 border-l border-purple-800/30">
+        <div className="json-indent ml-2 border-l border-slate-700/30">
           {isArray ? (
             value.map((item, index) => (
               <JsonItem key={index} itemKey={`[${index}]`} value={item} depth={depth + 1} />

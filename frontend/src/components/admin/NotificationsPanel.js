@@ -138,7 +138,7 @@ export const NotificationsPanel = () => {
         
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <DiscordIcon className="w-4 h-4 text-indigo-400" />
+            <DiscordIcon className="w-4 h-4 text-sky-400" />
             <span className={status.discord?.enabled ? 'text-green-400' : 'text-gray-500'}>
               {status.discord?.enabled ? 'Active' : 'Inactive'}
             </span>
@@ -153,7 +153,7 @@ export const NotificationsPanel = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-purple-800/50 pb-3">
+      <div className="flex gap-2 border-b border-slate-700/50 pb-3">
         <button
           onClick={() => setActiveTab('discord')}
           className={`px-4 py-2 rounded-t flex items-center gap-2 transition-colors ${
@@ -175,8 +175,8 @@ export const NotificationsPanel = () => {
       {/* Discord Config */}
       {activeTab === 'discord' && (
         <div className="space-y-4 animate-fade-in">
-          <div className="bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
-            <h4 className="font-semibold text-indigo-300 mb-2 flex items-center gap-2">
+          <div className="bg-sky-900/20 border border-sky-700/50 rounded-lg p-4">
+            <h4 className="font-semibold text-sky-300 mb-2 flex items-center gap-2">
               <DiscordIcon className="w-5 h-5" /> Discord Webhook
             </h4>
             <p className="text-sm text-gray-400 mb-4">
@@ -219,7 +219,7 @@ export const NotificationsPanel = () => {
                 <label 
                   key={key}
                   className={`flex items-center gap-3 p-3 rounded cursor-pointer transition-colors ${
-                    discordConfig[key] ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-black/20'
+                    discordConfig[key] ? 'bg-slate-900/30 border border-slate-600/50' : 'bg-black/20'
                   }`}
                 >
                   <input
@@ -348,7 +348,7 @@ export const NotificationsPanel = () => {
                 <label 
                   key={key}
                   className={`flex items-center gap-3 p-3 rounded cursor-pointer transition-colors ${
-                    emailConfig[key] ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-black/20'
+                    emailConfig[key] ? 'bg-slate-900/30 border border-slate-600/50' : 'bg-black/20'
                   }`}
                 >
                   <input

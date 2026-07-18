@@ -39,7 +39,7 @@ export const Modal = ({
       >
         {/* Header */}
         {(title || showClose) && (
-          <div className="flex items-center justify-between p-6 border-b border-purple-800/50">
+          <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
             {title && (
               <h2 className="warcraft-title text-2xl">{title}</h2>
             )}
@@ -67,7 +67,7 @@ export const Modal = ({
  * Modal footer with action buttons
  */
 export const ModalFooter = ({ children, className = '' }) => (
-  <div className={`flex gap-3 pt-4 border-t border-purple-800/50 mt-4 ${className}`}>
+  <div className={`flex gap-3 pt-4 border-t border-slate-700/50 mt-4 ${className}`}>
     {children}
   </div>
 );

@@ -91,7 +91,7 @@ export const ServerHealthStats = ({ server, orchId, showLabel = true }) => {
             <Users className="w-3 h-3 text-gray-500" />
             {showLabel && <span className="text-xs text-gray-500">PLAYERS</span>}
           </div>
-          <div className="stat-value text-lg text-purple-400">
+          <div className="stat-value text-lg text-sky-400">
             {stats.players}{stats.max_players ? `/${stats.max_players}` : ''}
           </div>
         </div>

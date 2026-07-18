@@ -254,7 +254,7 @@ const OrchestratorSection = ({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(orchestrator); }}
-                className="text-purple-400 hover:text-purple-300 p-2 hover:bg-purple-900/30 rounded transition-colors"
+                className="text-sky-400 hover:text-sky-300 p-2 hover:bg-sky-900/30 rounded transition-colors"
                 title="Edit orchestrator settings"
               >
                 <Edit className="w-4 h-4" />
@@ -413,8 +413,8 @@ const DeployServerModal = ({ orchestrators, plans, loadingPlans, onClose, onDepl
                   onClick={() => handleSelectPlan(plan)}
                   className={`p-4 rounded-lg text-left transition-all ${
                     selectedPlan?.game_uid === plan.game_uid
-                      ? 'bg-purple-900/50 border-2 border-purple-500'
-                      : 'bg-black/30 border-2 border-transparent hover:border-purple-800'
+                      ? 'bg-slate-900/50 border-2 border-sky-500'
+                      : 'bg-black/30 border-2 border-transparent hover:border-slate-700'
                   }`}
                 >
                   <img 
@@ -783,13 +783,13 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
           <div className="flex rounded overflow-hidden border border-gray-700">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 ${viewMode === 'grid' ? 'bg-purple-900/50' : 'bg-black/30'}`}
+              className={`p-2 ${viewMode === 'grid' ? 'bg-slate-900/50' : 'bg-black/30'}`}
             >
               <Grid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 ${viewMode === 'list' ? 'bg-purple-900/50' : 'bg-black/30'}`}
+              className={`p-2 ${viewMode === 'list' ? 'bg-slate-900/50' : 'bg-black/30'}`}
             >
               <List className="w-4 h-4" />
             </button>

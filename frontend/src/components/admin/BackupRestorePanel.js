@@ -211,11 +211,11 @@ export const BackupRestorePanel = () => {
           {backups.map((backup) => (
             <div 
               key={backup.filename}
-              className="bg-black/20 border border-purple-800/30 rounded-lg p-4 flex items-center justify-between"
+              className="bg-black/20 border border-slate-700/30 rounded-lg p-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-purple-900/30">
-                  <Archive className="w-5 h-5 text-purple-400" />
+                <div className="p-3 rounded-lg bg-sky-900/20">
+                  <Archive className="w-5 h-5 text-sky-400" />
                 </div>
                 
                 <div>
@@ -287,7 +287,7 @@ export const BackupRestorePanel = () => {
                 <label 
                   key={option.key}
                   className={`flex items-start gap-3 p-3 rounded cursor-pointer transition-colors ${
-                    restoreOptions[option.key] ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-black/20 border border-transparent'
+                    restoreOptions[option.key] ? 'bg-slate-900/30 border border-slate-600/50' : 'bg-black/20 border border-transparent'
                   }`}
                 >
                   <input

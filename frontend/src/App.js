@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import '@/App.css';
 import { 
-  Home, Server, Users, Shield, LogOut, Sun, Moon, 
+  Home, Server, Users, Shield, LogOut,
   AlertCircle, CheckCircle, XCircle, AlertTriangle, X
 } from 'lucide-react';
 import { api, BACKEND_URL } from './utils/api';
 import { HomePage } from './HomePage';
 import { ServersPage } from './ServersPage';
 import { UsersPage } from './UsersPage';
-import { AuditLogPanel, FeatureTogglesPanel, BackupRestorePanel, NotificationsPanel } from './components/admin';
+import { AuditLogPanel, FeatureTogglesPanel, BackupRestorePanel, NotificationsPanel, ThemeSettingsPanel } from './components/admin';
 import { LoadingSpinner } from './components/common/Loading';
 
 // Toast/Alert Notification Component with Lucide icons
@@ -152,14 +152,14 @@ const AdminWizard = ({ onComplete }) => {
         {/* Step Indicator */}
         <div className="flex items-center justify-center mb-8 gap-4">
           <div className={`flex items-center gap-2 ${step >= 1 ? 'opacity-100' : 'opacity-50'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step === 1 ? 'gold-button' : 'bg-green-600 text-white'}`}>
+            <div className={`step-badge w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step === 1 ? 'step-badge--active' : ''}`}>
               {step > 1 ? <CheckCircle className="w-4 h-4" /> : '1'}
             </div>
             <span className="text-sm">Admin Account</span>
           </div>
           <div className="w-12 h-0.5 bg-gray-600"></div>
           <div className={`flex items-center gap-2 ${step >= 2 ? 'opacity-100' : 'opacity-50'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step === 2 ? 'gold-button' : 'stone-texture border-2 border-gray-600'}`}>
+            <div className={`step-badge w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step === 2 ? 'step-badge--active' : ''}`}>
               2
             </div>
             <span className="text-sm">Orchestrator</span>
@@ -407,7 +407,12 @@ const Login = ({ onLogin }) => {
 const Dashboard = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('home');
   const [adminSubTab, setAdminSubTab] = useState('overview');
-  const [darkMode, setDarkMode] = useState(true);
+  const normalizeThemeMode = (value) => {
+    if (value === 'classic') return 'horde';
+    return ['clean', 'horde', 'alliance'].includes(value) ? value : 'clean';
+  };
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('peon.darkMode') !== 'false');
+  const [themeMode, setThemeMode] = useState(() => normalizeThemeMode(localStorage.getItem('peon.themeMode')));
   const [orchestrators, setOrchestrators] = useState([]);
   const [selectedOrch, setSelectedOrch] = useState(null);
   const [serversData, setServersData] = useState({});
@@ -492,10 +497,16 @@ const Dashboard = ({ user, onLogout }) => {
     return () => clearInterval(interval);
   }, [orchestrators]);
 
-  // Theme toggle
+  // Theme toggle and mode
   useEffect(() => {
+    document.body.classList.toggle('dark-mode', darkMode);
     document.body.classList.toggle('light-mode', !darkMode);
-  }, [darkMode]);
+    document.body.classList.toggle('clean-theme', themeMode === 'clean');
+    document.body.classList.toggle('horde-theme', themeMode === 'horde');
+    document.body.classList.toggle('alliance-theme', themeMode === 'alliance');
+    localStorage.setItem('peon.darkMode', darkMode ? 'true' : 'false');
+    localStorage.setItem('peon.themeMode', themeMode);
+  }, [darkMode, themeMode]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -528,14 +539,6 @@ const Dashboard = ({ user, onLogout }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="theme-switcher"
-            aria-label="Toggle theme"
-          >
-            {darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-          </button>
-
           <div className="text-right hidden sm:block">
             <p className="text-sm font-semibold">{user.username}</p>
             <p className="text-xs text-gray-400 capitalize">{user.role}</p>
@@ -635,7 +638,7 @@ const Dashboard = ({ user, onLogout }) => {
             </h2>
 
             {/* Admin Sub-tabs */}
-            <div className="flex flex-wrap gap-2 border-b border-purple-800/50 pb-4">
+            <div className="flex flex-wrap gap-2 border-b border-slate-700/50 pb-4">
               {['overview', 'features', 'backup', 'notifications', 'audit'].map((tab) => (
                 <button
                   key={tab}
@@ -651,6 +654,13 @@ const Dashboard = ({ user, onLogout }) => {
 
             {adminSubTab === 'overview' && (
               <div className="space-y-4">
+                <ThemeSettingsPanel
+                  darkMode={darkMode}
+                  themeMode={themeMode}
+                  onDarkModeChange={setDarkMode}
+                  onThemeModeChange={setThemeMode}
+                />
+
                 <a
                   href={`${BACKEND_URL}/docs`}
                   target="_blank"
@@ -661,7 +671,7 @@ const Dashboard = ({ user, onLogout }) => {
                 </a>
                 {selectedOrch && (
                   <a
-                    href={`/api/proxy/${selectedOrch}/docs`}
+                    href={`/api/proxy/${selectedOrch}/docs?token=${encodeURIComponent(localStorage.getItem('token') || '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="gray-button px-6 py-3 rounded inline-flex items-center gap-2"

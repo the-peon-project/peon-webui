@@ -86,8 +86,8 @@ export const ServerUpdateModal = ({ server, orchestratorId, onClose, onSuccess }
             disabled={updating}
             className={`w-full p-4 rounded-lg text-left transition-all ${
               selectedMode === mode.id
-                ? 'bg-purple-900/50 border-2 border-purple-500'
-                : 'bg-black/20 border-2 border-transparent hover:border-purple-800'
+                ? 'bg-slate-900/50 border-2 border-sky-500'
+                : 'bg-black/20 border-2 border-transparent hover:border-slate-700'
             }`}
           >
             <div className="flex items-start gap-3">
@@ -97,7 +97,7 @@ export const ServerUpdateModal = ({ server, orchestratorId, onClose, onSuccess }
                 <p className="text-sm text-gray-400">{mode.description}</p>
               </div>
               {selectedMode === mode.id && (
-                <div className="ml-auto text-purple-400">✓</div>
+                <div className="ml-auto text-sky-400">✓</div>
               )}
             </div>
           </button>

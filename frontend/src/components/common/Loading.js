@@ -14,7 +14,7 @@ export const LoadingSpinner = ({ size = 'md', className = '' }) => {
 
   return (
     <Loader2 
-      className={`animate-spin text-purple-400 ${sizeClasses[size]} ${className}`}
+      className={`animate-spin text-sky-400 ${sizeClasses[size]} ${className}`}
     />
   );
 };
@@ -45,7 +45,7 @@ export const LoadingCard = ({ height = 'h-32' }) => (
  */
 export const Skeleton = ({ className = '', animate = true }) => (
   <div 
-    className={`bg-purple-900/30 rounded ${animate ? 'animate-pulse' : ''} ${className}`}
+    className={`bg-slate-900/30 rounded ${animate ? 'animate-pulse' : ''} ${className}`}
   />
 );
 

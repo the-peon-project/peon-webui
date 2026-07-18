@@ -20,7 +20,7 @@ export const Button = ({
     secondary: 'gray-button',
     danger: 'red-button',
     ghost: 'bg-transparent hover:bg-white/10 text-gray-300',
-    outline: 'border-2 border-purple-500 text-purple-400 hover:bg-purple-500/20',
+    outline: 'border-2 border-sky-500 text-sky-400 hover:bg-sky-500/20',
   };
 
   const sizes = {

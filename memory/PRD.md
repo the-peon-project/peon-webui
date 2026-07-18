@@ -3,6 +3,17 @@
 ## Overview
 A web application to manage game servers based on the PEON ecosystem (peon-orchestrator, peon-warplans).
 
+## Brand Direction
+
+PEON should visually read as a war-camp operations console: sturdy, tactical, and rooted in fantasy RTS cues.
+
+- Core palette: slate, steel, bone, green, light blue.
+- Avoid purple/violet/indigo as default UI accents.
+- Use green for online/success, red for danger/offline, amber for warnings, and light blue for informational emphasis.
+- Keep surfaces panel-based with stone/metal texture cues.
+- Maintain a modern `clean` theme as default and a retro `classic` theme for 90s RTS styling.
+- Build future UI elements against these tokens so new screens remain visually consistent.
+
 ## Technology Stack
 - **Frontend**: React 18, Lucide icons, modern CSS animations
 - **Backend**: FastAPI (Python), SQLite database
