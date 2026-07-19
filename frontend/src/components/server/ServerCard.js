@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Play, Square, RefreshCw, ArrowUpCircle, Info, Lock } from 'lucide-react';
-import { ServerHealthStats } from './ServerHealthStats';
 import { getGameLogoUrl, handleLogoError } from '../../utils/logos';
 
 /**
@@ -51,9 +50,6 @@ export const ServerCard = ({
           />
         </div>
       </div>
-
-      {/* Server Health Stats */}
-      <ServerHealthStats server={server} orchId={orchId} />
 
       {/* Description */}
       <p className="text-sm text-gray-300 mb-3 line-clamp-2 min-h-[2.5rem] mt-2">

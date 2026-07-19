@@ -3,8 +3,8 @@ import { Check, Moon, Sun } from 'lucide-react';
 
 const THEME_OPTIONS = [
   {
-    id: 'clean',
-    name: 'Clean',
+    id: 'default',
+    name: 'Default',
     description: 'Flat slate and light-blue UI with restrained, modern controls.',
     accent: 'sky',
     svg: (
@@ -46,7 +46,7 @@ const THEME_OPTIONS = [
 ];
 
 const THEME_LABELS = {
-  clean: 'Clean',
+  default: 'Default',
   horde: 'Horde',
   alliance: 'Alliance',
 };
@@ -105,7 +105,7 @@ const ThemeSettingsPanel = ({ darkMode, themeMode, onDarkModeChange, onThemeMode
       </div>
 
       <div className="theme-settings-summary bg-black/20 rounded p-3 text-sm text-gray-400">
-        Current theme: <span className="text-gray-200 font-semibold">{THEME_LABELS[themeMode] || THEME_LABELS.clean}</span>
+        Current theme: <span className="text-gray-200 font-semibold">{THEME_LABELS[themeMode] || THEME_LABELS.default}</span>
         <span className="mx-2">•</span>
         Mode: <span className="text-gray-200 font-semibold">{darkMode ? 'Dark' : 'Light'}</span>
       </div>

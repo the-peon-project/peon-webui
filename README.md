@@ -18,11 +18,11 @@ PEON's visual identity should feel like a war camp command console: practical, s
 
 - Use strong display faces for headings and compact readable body text.
 - In classic mode, typography may feel pixel-era and game-like.
-- In clean mode, typography should stay crisp and modern.
+- In default mode, typography should stay crisp and modern.
 
 ### Shape Language
 
-- Rounded corners should be modest in clean mode and squared off in classic mode.
+- Rounded corners should be modest in default mode and squared off in the Horde variant.
 - Panels, modals, buttons, and cards should look like they belong to the same control surface.
 - Shadows should imply depth but never overpower content.
 
@@ -35,7 +35,7 @@ PEON's visual identity should feel like a war camp command console: practical, s
 
 ### Theme Modes
 
-- `clean`: the current production default, modern and restrained.
+- `default`: the current production default, modern and restrained.
 - `horde`: a fortified warcamp theme with iron, bone, leather, and battle-green accents.
 - `alliance`: a human castle theme with stone, steel, royal blue, and bannered symmetry.
 

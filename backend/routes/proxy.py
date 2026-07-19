@@ -348,40 +348,62 @@ async def server_action(
     orch = OrchestratorService.get_by_id(orch_id)
     if not orch:
         raise HTTPException(status_code=404, detail="Orchestrator not found")
+
+    # WebUI exposes a single delete action, while the orchestrator expects
+    # DELETE /server/destroy/{uid} or /server/eradicate/{uid}.
+    orchestrator_action = 'destroy' if action == 'delete' else action
+    method = 'delete' if action == 'delete' else 'put'
     
     try:
         timeout = aiohttp.ClientTimeout(total=90, connect=10, sock_read=80)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key']}
-            base_url = resolve_orchestrator_url(orch['base_url'])
-            url = f"{base_url}/api/v1/server/{action}/{server_uid}"
-            
             # Add update mode if applicable
             body = None
             if action == 'update' and update_data:
                 body = {"mode": update_data.mode}
-            
-            async with session.put(url, headers=headers, json=body) as response:
+
+            last_error = None
+
+            for base_url in resolve_orchestrator_url_candidates(orch['base_url']):
+                url = f"{base_url}/api/v1/server/{orchestrator_action}/{server_uid}"
+
                 try:
-                    result = await response.json()
-                except Exception:
-                    result = {"result": await response.text()}
-                
-                if response.status == 200:
-                    # Log server action
-                    AuditService.log(
-                        user_id=current_user['id'],
-                        username=current_user['username'],
-                        action_type='action',
-                        category='server',
-                        target_type='server',
-                        target_id=server_uid,
-                        details=f"Executed {action} on server: {server_uid}",
-                        ip_address=request.client.host if request.client else None
-                    )
-                    return result
-                else:
-                    raise HTTPException(status_code=response.status, detail=result.get('info', 'Action failed'))
+                    request_method = getattr(session, method)
+                    async with request_method(url, headers=headers, json=body) as response:
+                        try:
+                            result = await response.json()
+                        except Exception:
+                            result = {"result": await response.text()}
+
+                        if response.status == 200:
+                            AuditService.log(
+                                user_id=current_user['id'],
+                                username=current_user['username'],
+                                action_type='action',
+                                category='server',
+                                target_type='server',
+                                target_id=server_uid,
+                                details=f"Executed {action} on server: {server_uid}",
+                                ip_address=request.client.host if request.client else None
+                            )
+                            return result
+
+                        last_error = HTTPException(
+                            status_code=response.status,
+                            detail=result.get('info') or result.get('detail') or 'Action failed'
+                        )
+                except (asyncio.TimeoutError, aiohttp.ClientError) as exc:
+                    last_error = exc
+                    continue
+
+            if isinstance(last_error, HTTPException):
+                raise last_error
+            if isinstance(last_error, asyncio.TimeoutError):
+                raise HTTPException(status_code=504, detail="Request timeout")
+            if last_error:
+                raise HTTPException(status_code=500, detail=f"Action error: {str(last_error)}")
+            raise HTTPException(status_code=504, detail="Orchestrator request timeout")
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Request timeout")
     except HTTPException:

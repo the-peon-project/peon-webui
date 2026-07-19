@@ -5,7 +5,7 @@ import {
   Loader2, Server, AlertCircle, X, Lock, Terminal
 } from 'lucide-react';
 import { api } from './utils/api';
-import { ServerInfoModal, ServerUpdateModal, ServerHealthStats, ServerConsoleModal } from './components/server';
+import { ServerInfoModal, ServerUpdateModal, ServerConsoleModal } from './components/server';
 import { LoadingSpinner, SkeletonCard } from './components/common/Loading';
 import { getGameLogoUrl, handleLogoError } from './utils/logos';
 
@@ -16,7 +16,7 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
   const isStopped = ['exited', 'created'].includes(server.container_state);
 
   return (
-    <div className="stone-texture p-4 rounded card-hover animate-fade-in" data-testid="server-card">
+    <div className="server-card-panel stone-texture rounded card-hover animate-fade-in" data-testid="server-card">
       {/* Header with Logo on Right */}
       <div className="flex justify-between items-start gap-3 mb-3">
         <div className="flex-1 min-w-0">
@@ -42,16 +42,13 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
         />
       </div>
 
-      {/* Server Health Stats */}
-      <ServerHealthStats server={server} orchId={orchId} />
-
       {/* Description */}
       <p className="text-sm text-gray-300 mb-3 line-clamp-2 min-h-[2.5rem] mt-2">
         {server.description || 'No description'}
       </p>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="server-card-actions">
         {canManageServers ? (
           <>
             <button
@@ -148,7 +145,7 @@ const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, o
   const isRunning = server.container_state === 'running';
 
   return (
-    <div className="stone-texture p-3 rounded flex items-center gap-3 animate-fade-in" data-testid="server-list-item">
+    <div className="server-list-item-panel stone-texture p-3 rounded flex items-center gap-3 animate-fade-in" data-testid="server-list-item">
       <img 
         src={getGameLogoUrl(server.game_uid)}
         alt={server.game_uid}
@@ -165,7 +162,7 @@ const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, o
         {server.container_state?.toUpperCase()}
       </span>
 
-      <div className="flex gap-2">
+      <div className="server-list-actions">
         {canManageServers && (
           <>
             <button
@@ -231,7 +228,7 @@ const OrchestratorSection = ({
   const runningCount = filteredServers.filter(s => s.container_state === 'running').length;
 
   return (
-    <div className="mb-6 animate-fade-in">
+    <div className="server-orchestrator-shell mb-6 animate-fade-in">
       {/* Orchestrator Header */}
       <div 
         className="flex items-center justify-between p-4 stone-texture rounded-t-lg cursor-pointer"
@@ -273,9 +270,9 @@ const OrchestratorSection = ({
 
       {/* Servers Content */}
       {expanded && (
-        <div className="bg-black/20 rounded-b-lg p-4">
+        <div className="server-view-shell bg-black/20 rounded-b-lg p-4">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="servers-grid">
               {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
             </div>
           ) : filteredServers.length === 0 ? (
@@ -284,7 +281,7 @@ const OrchestratorSection = ({
               <p>No servers found</p>
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="servers-grid">
               {filteredServers.map((server) => (
                 <ServerCard
                   key={`${orchestrator.id}_${server.game_uid}_${server.servername}`}
@@ -301,7 +298,7 @@ const OrchestratorSection = ({
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="servers-list">
               {filteredServers.map((server) => (
                 <ServerListItem
                   key={`${orchestrator.id}_${server.game_uid}_${server.servername}`}
@@ -759,14 +756,14 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
   };
 
   return (
-    <div className="space-y-6">
+    <div className="servers-page space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="warcraft-subtitle text-2xl flex items-center gap-2">
           <Server className="w-6 h-6" /> Server Management
         </h2>
 
-        <div className="flex items-center gap-3">
+        <div className="servers-toolbar flex items-center gap-3">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -818,7 +815,7 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
 
       {/* Orchestrators & Servers */}
       {orchestrators.length === 0 ? (
-        <div className="text-center py-12 stone-texture rounded-lg">
+        <div className="server-empty-state text-center py-12 stone-texture rounded-lg">
           <Server className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <h3 className="warcraft-subtitle text-xl mb-2">No Orchestrators Configured</h3>
           <p className="text-gray-400 mb-4">Add an orchestrator to start managing game servers.</p>

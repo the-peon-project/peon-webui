@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { LoadingSpinner } from '../common/Loading';
+import { ServerHealthStats } from './ServerHealthStats';
 import { api } from '../../utils/api';
 import { formatKeyName, getValueColor } from '../../utils/jsonParser';
 import { getGameLogoUrl, handleLogoError } from '../../utils/logos';
@@ -121,6 +122,12 @@ export const ServerInfoModal = ({ server, orchestratorId, onClose }) => {
           onError={handleLogoError}
         />
       </div>
+
+      {server.container_state === 'running' && (
+        <div className="mb-6">
+          <ServerHealthStats server={server} orchId={orchestratorId} />
+        </div>
+      )}
 
       {/* View Mode Toggle */}
       <div className="flex gap-2 mb-4">

@@ -409,7 +409,8 @@ const Dashboard = ({ user, onLogout }) => {
   const [adminSubTab, setAdminSubTab] = useState('overview');
   const normalizeThemeMode = (value) => {
     if (value === 'classic') return 'horde';
-    return ['clean', 'horde', 'alliance'].includes(value) ? value : 'clean';
+    if (value === 'clean') return 'default';
+    return ['default', 'horde', 'alliance'].includes(value) ? value : 'default';
   };
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('peon.darkMode') !== 'false');
   const [themeMode, setThemeMode] = useState(() => normalizeThemeMode(localStorage.getItem('peon.themeMode')));
@@ -501,7 +502,8 @@ const Dashboard = ({ user, onLogout }) => {
   useEffect(() => {
     document.body.classList.toggle('dark-mode', darkMode);
     document.body.classList.toggle('light-mode', !darkMode);
-    document.body.classList.toggle('clean-theme', themeMode === 'clean');
+    document.body.classList.toggle('default-theme', themeMode === 'default');
+    document.body.classList.remove('clean-theme');
     document.body.classList.toggle('horde-theme', themeMode === 'horde');
     document.body.classList.toggle('alliance-theme', themeMode === 'alliance');
     localStorage.setItem('peon.darkMode', darkMode ? 'true' : 'false');

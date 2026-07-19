@@ -1,4 +1,4 @@
-/* Clean + Classic themes with Warcraft-inspired dark palette */
+/* Default + variant themes with Warcraft-inspired palette */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Press+Start+2P&family=VT323&display=swap');
 
 * {
@@ -23,6 +23,14 @@
 body {
   object-fit: contain;
   margin-left: auto;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(2, 6, 23, 0.72);
+  overflow-y: auto;
 }
 
 /* ============ Card Styles ============ */
@@ -165,18 +173,13 @@ body.light-mode :is(
 
 /* Theme system */
 
-body.clean-theme,
-body.horde-theme,
-body.alliance-theme {
+body:is(.default-theme, .clean-theme, .horde-theme, .alliance-theme) {
   image-rendering: pixelated;
+  color: var(--text-primary);
 }
 
-body.clean-theme::before,
-body.clean-theme::after,
-body.horde-theme::before,
-body.horde-theme::after,
-body.alliance-theme::before,
-body.alliance-theme::after {
+body:is(.default-theme, .clean-theme, .horde-theme, .alliance-theme)::before,
+body:is(.default-theme, .clean-theme, .horde-theme, .alliance-theme)::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -184,14 +187,12 @@ body.alliance-theme::after {
   z-index: 0;
 }
 
-body.clean-theme > *,
-body.horde-theme > *,
-body.alliance-theme > * {
+body:is(.default-theme, .clean-theme, .horde-theme, .alliance-theme) > * {
   position: relative;
   z-index: 1;
 }
 
-body.dark-mode.clean-theme {
+body.dark-mode:is(.default-theme, .clean-theme) {
   --primary: #38bdf8;
   --primary-light: #7dd3fc;
   --primary-dark: #0284c7;
@@ -205,7 +206,7 @@ body.dark-mode.clean-theme {
   background: #0f172a;
 }
 
-body.light-mode.clean-theme {
+body.light-mode:is(.default-theme, .clean-theme) {
   --primary: #0ea5e9;
   --primary-light: #38bdf8;
   --primary-dark: #0284c7;
@@ -217,6 +218,52 @@ body.light-mode.clean-theme {
   --text-primary: #0f172a;
   --text-secondary: #475569;
   background: #f8fafc;
+}
+
+body.dark-mode:is(.default-theme, .clean-theme) .medieval-border,
+body.dark-mode:is(.default-theme, .clean-theme) .stone-texture,
+body.dark-mode:is(.default-theme, .clean-theme) .theme-settings-panel,
+body.dark-mode:is(.default-theme, .clean-theme) .theme-mode-card,
+body.dark-mode:is(.default-theme, .clean-theme) .theme-settings-summary,
+body.dark-mode:is(.default-theme, .clean-theme) .stat-card,
+body.dark-mode:is(.default-theme, .clean-theme) .server-card-panel,
+body.dark-mode:is(.default-theme, .clean-theme) .server-list-item-panel,
+body.dark-mode:is(.default-theme, .clean-theme) .server-view-shell,
+body.dark-mode:is(.default-theme, .clean-theme) .server-orchestrator-shell,
+body.dark-mode:is(.default-theme, .clean-theme) .server-toolbar,
+body.dark-mode:is(.default-theme, .clean-theme) .server-empty-state {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.light-mode:is(.default-theme, .clean-theme) .medieval-border,
+body.light-mode:is(.default-theme, .clean-theme) .stone-texture,
+body.light-mode:is(.default-theme, .clean-theme) .theme-settings-panel,
+body.light-mode:is(.default-theme, .clean-theme) .theme-mode-card,
+body.light-mode:is(.default-theme, .clean-theme) .theme-settings-summary,
+body.light-mode:is(.default-theme, .clean-theme) .stat-card,
+body.light-mode:is(.default-theme, .clean-theme) .server-card-panel,
+body.light-mode:is(.default-theme, .clean-theme) .server-list-item-panel,
+body.light-mode:is(.default-theme, .clean-theme) .server-view-shell,
+body.light-mode:is(.default-theme, .clean-theme) .server-orchestrator-shell,
+body.light-mode:is(.default-theme, .clean-theme) .server-toolbar,
+body.light-mode:is(.default-theme, .clean-theme) .server-empty-state {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+body.dark-mode:is(.default-theme, .clean-theme) .theme-mode-card,
+body.dark-mode:is(.default-theme, .clean-theme) .theme-settings-summary,
+body.dark-mode:is(.default-theme, .clean-theme) .step-badge,
+body.dark-mode:is(.default-theme, .clean-theme) .stat-card {
+  color: #e2e8f0;
+}
+
+body.light-mode:is(.default-theme, .clean-theme) .theme-mode-card,
+body.light-mode:is(.default-theme, .clean-theme) .theme-settings-summary,
+body.light-mode:is(.default-theme, .clean-theme) .step-badge,
+body.light-mode:is(.default-theme, .clean-theme) .stat-card {
+  color: #0f172a;
 }
 
 body.dark-mode.horde-theme {
@@ -275,7 +322,41 @@ body.light-mode.alliance-theme {
   background: #eff6ff;
 }
 
-body.clean-theme .warcraft-title,
+body:is(.default-theme, .clean-theme, .horde-theme, .alliance-theme) :is(
+  .theme-settings-panel,
+  .theme-mode-card,
+  .theme-settings-summary,
+  .stat-card,
+  .server-card-panel,
+  .server-list-item-panel,
+  .server-view-shell,
+  .server-orchestrator-shell,
+  .server-empty-state,
+  [data-testid='modal-content']
+) {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+body.light-mode:is(.default-theme, .clean-theme, .horde-theme, .alliance-theme) :is(
+  .theme-switcher,
+  .theme-mode-card,
+  .theme-settings-summary,
+  .stat-card,
+  .server-card-panel,
+  .server-list-item-panel,
+  .server-toolbar,
+  .servers-toolbar,
+  .server-view-shell,
+  .server-orchestrator-shell,
+  .server-empty-state,
+  [data-testid='modal-content']
+) {
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+body:is(.default-theme, .clean-theme) .warcraft-title,
 body.horde-theme .warcraft-title,
 body.alliance-theme .warcraft-title {
   font-family: 'Press Start 2P', cursive;
@@ -285,7 +366,7 @@ body.alliance-theme .warcraft-title {
   line-height: 1.35;
 }
 
-body.clean-theme .warcraft-title {
+body:is(.default-theme, .clean-theme) .warcraft-title {
   color: #d9edf9;
   text-shadow: 1px 1px 0 rgba(15, 23, 42, 0.35);
 }
@@ -300,43 +381,47 @@ body.alliance-theme .warcraft-title {
   text-shadow: 2px 2px 0 #20334d, 4px 4px 0 rgba(0, 0, 0, 0.28);
 }
 
-body.clean-theme .warcraft-subtitle,
+body:is(.default-theme, .clean-theme) .warcraft-subtitle,
 body.horde-theme .warcraft-subtitle,
 body.alliance-theme .warcraft-subtitle,
-body.clean-theme .gold-button,
+body:is(.default-theme, .clean-theme) .gold-button,
 body.horde-theme .gold-button,
 body.alliance-theme .gold-button,
-body.clean-theme .gray-button,
+body:is(.default-theme, .clean-theme) .gray-button,
 body.horde-theme .gray-button,
 body.alliance-theme .gray-button,
-body.clean-theme .red-button,
+body:is(.default-theme, .clean-theme) .red-button,
 body.horde-theme .red-button,
 body.alliance-theme .red-button,
-body.clean-theme .blue-button,
+body:is(.default-theme, .clean-theme) .blue-button,
 body.horde-theme .blue-button,
 body.alliance-theme .blue-button,
-body.clean-theme input,
+body:is(.default-theme, .clean-theme) input,
 body.horde-theme input,
 body.alliance-theme input,
-body.clean-theme textarea,
+body:is(.default-theme, .clean-theme) textarea,
 body.horde-theme textarea,
 body.alliance-theme textarea,
-body.clean-theme select,
+body:is(.default-theme, .clean-theme) select,
 body.horde-theme select,
 body.alliance-theme select {
   font-family: 'VT323', monospace;
   letter-spacing: 0.7px;
 }
 
-body.clean-theme .medieval-border,
-body.clean-theme .stone-texture,
-body.clean-theme .gold-button,
-body.clean-theme .gray-button,
-body.clean-theme .red-button,
-body.clean-theme .blue-button,
-body.clean-theme input,
-body.clean-theme textarea,
-body.clean-theme select,
+body:is(.default-theme, .clean-theme, .horde-theme, .alliance-theme) .warcraft-subtitle {
+  color: var(--text-primary);
+}
+
+body:is(.default-theme, .clean-theme) .medieval-border,
+body:is(.default-theme, .clean-theme) .stone-texture,
+body:is(.default-theme, .clean-theme) .gold-button,
+body:is(.default-theme, .clean-theme) .gray-button,
+body:is(.default-theme, .clean-theme) .red-button,
+body:is(.default-theme, .clean-theme) .blue-button,
+body:is(.default-theme, .clean-theme) input,
+body:is(.default-theme, .clean-theme) textarea,
+body:is(.default-theme, .clean-theme) select,
 body.horde-theme .medieval-border,
 body.horde-theme .stone-texture,
 body.horde-theme .gold-button,
@@ -360,75 +445,108 @@ body.alliance-theme select {
   box-shadow: inset 0 0 0 1px rgba(255, 245, 220, 0.12), 4px 4px 0 rgba(0, 0, 0, 0.35);
 }
 
-body.clean-theme .medieval-border,
-body.clean-theme .stone-texture {
-  background: #ffffff;
-}
-
-body.clean-theme .medieval-border {
+body:is(.default-theme, .clean-theme) .medieval-border {
   border-color: #cbd5e1;
 }
 
-body.clean-theme .stone-texture {
-  background: #ffffff;
+body.dark-mode:is(.default-theme, .clean-theme) .medieval-border,
+body.dark-mode:is(.default-theme, .clean-theme) .stone-texture {
+  background: #1e293b;
 }
 
-body.clean-theme .gold-button {
+body:is(.default-theme, .clean-theme) .gold-button {
   background: #38bdf8;
   border-color: #7dd3fc;
   color: #082030;
 }
 
-body.clean-theme .gray-button {
+body:is(.default-theme, .clean-theme) .gray-button {
   background: #334155;
   border-color: #64748b;
   color: #f8fafc;
 }
 
-body.clean-theme .red-button {
+body:is(.default-theme, .clean-theme) .red-button {
   background: #ef4444;
   border-color: #fca5a5;
   color: #fff;
 }
 
-body.clean-theme .blue-button {
+body:is(.default-theme, .clean-theme) .blue-button {
   background: #0ea5e9;
   border-color: #7dd3fc;
   color: #fff;
 }
 
-body.clean-theme input,
-body.clean-theme textarea,
-body.clean-theme select {
+body.light-mode:is(.default-theme, .clean-theme) .gold-button {
+  background: #0ea5e9;
+  border-color: #7dd3fc;
+  color: #082030;
+}
+
+body.light-mode:is(.default-theme, .clean-theme) .gray-button {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+body.light-mode:is(.default-theme, .clean-theme) .red-button {
+  background: #ef4444;
+  border-color: #fca5a5;
+  color: #fff;
+}
+
+body.light-mode:is(.default-theme, .clean-theme) .blue-button {
+  background: #38bdf8;
+  border-color: #7dd3fc;
+  color: #082030;
+}
+
+body:is(.default-theme, .clean-theme) input,
+body:is(.default-theme, .clean-theme) textarea,
+body:is(.default-theme, .clean-theme) select {
   background: #ffffff;
   border-color: #cbd5e1;
   color: #0f172a;
 }
 
-body.clean-theme .status-online {
+body:is(.default-theme, .clean-theme) .status-online {
   color: #22c55e;
   text-shadow: 0 0 8px rgba(34, 197, 94, 0.35);
 }
 
-body.clean-theme .status-offline {
+body:is(.default-theme, .clean-theme) .status-offline {
   color: #ef4444;
   text-shadow: 0 0 6px rgba(239, 68, 68, 0.25);
 }
 
-body.clean-theme .status-pending {
+body:is(.default-theme, .clean-theme) .status-pending {
   color: #38bdf8;
   text-shadow: 0 0 6px rgba(56, 189, 248, 0.25);
 }
 
-body.clean-theme .card-hover:hover {
+body:is(.default-theme, .clean-theme) .card-hover:hover {
   transform: translate(-1px, -1px);
   box-shadow: inset 0 0 0 1px rgba(255, 245, 220, 0.2), 6px 6px 0 rgba(0, 0, 0, 0.45);
 }
 
-body.clean-theme .theme-switcher {
+body:is(.default-theme, .clean-theme) .theme-switcher {
   border-radius: 0;
   border: 2px solid var(--border-color);
   background: var(--bg-card);
+}
+
+body.light-mode:is(.default-theme, .clean-theme) .theme-switcher,
+body.light-mode:is(.default-theme, .clean-theme) .theme-mode-card,
+body.light-mode:is(.default-theme, .clean-theme) .theme-settings-summary,
+body.light-mode:is(.default-theme, .clean-theme) .stat-card,
+body.light-mode:is(.default-theme, .clean-theme) .server-card-panel,
+body.light-mode:is(.default-theme, .clean-theme) .server-list-item-panel,
+body.light-mode:is(.default-theme, .clean-theme) .server-toolbar,
+body.light-mode:is(.default-theme, .clean-theme) .server-view-shell,
+body.light-mode:is(.default-theme, .clean-theme) .server-orchestrator-shell,
+body.light-mode:is(.default-theme, .clean-theme) .server-empty-state {
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
 }
 
 body.horde-theme {
@@ -468,6 +586,15 @@ body.horde-theme .stone-texture {
   background: #241714;
 }
 
+body.light-mode.horde-theme .medieval-border {
+  border-color: #c98b67;
+  background: #ffffff;
+}
+
+body.light-mode.horde-theme .stone-texture {
+  background: #fff1dd;
+}
+
 body.horde-theme .gold-button {
   background: #7a9f2f;
   border-color: #b8db7a;
@@ -500,6 +627,38 @@ body.horde-theme select {
   color: #f4e3bf;
 }
 
+body.light-mode.horde-theme .gold-button {
+  background: #4f9d4b;
+  border-color: #8dc87c;
+  color: #f6fff2;
+}
+
+body.light-mode.horde-theme .gray-button {
+  background: #ead8c9;
+  border-color: #c98b67;
+  color: #2a1a14;
+}
+
+body.light-mode.horde-theme .red-button {
+  background: #bc5649;
+  border-color: #e6a49d;
+  color: #fff7f5;
+}
+
+body.light-mode.horde-theme .blue-button {
+  background: #5d8372;
+  border-color: #9bc9b6;
+  color: #f4fffb;
+}
+
+body.light-mode.horde-theme input,
+body.light-mode.horde-theme textarea,
+body.light-mode.horde-theme select {
+  background: #fffaf4;
+  border-color: #d3a47e;
+  color: #2a1a14;
+}
+
 body.horde-theme .status-online {
   color: #8bff5d;
   text-shadow: 0 0 8px rgba(139, 255, 93, 0.5);
@@ -524,9 +683,9 @@ body.horde-theme .theme-switcher {
   background: var(--bg-card);
 }
 
+body:is(.default-theme, .clean-theme) .theme-switcher--admin,
 body.horde-theme .theme-switcher--admin,
-body.alliance-theme .theme-switcher--admin,
-body.clean-theme .theme-switcher--admin {
+body.alliance-theme .theme-switcher--admin {
   min-width: 7.5rem;
 }
 
@@ -567,6 +726,15 @@ body.alliance-theme .stone-texture {
   background: #223041;
 }
 
+body.light-mode.alliance-theme .medieval-border {
+  border-color: #b6c8e6;
+  background: #ffffff;
+}
+
+body.light-mode.alliance-theme .stone-texture {
+  background: #f3f8ff;
+}
+
 body.alliance-theme .gold-button {
   background: #d2b46c;
   border-color: #f0d28f;
@@ -599,6 +767,38 @@ body.alliance-theme select {
   color: #10213d;
 }
 
+body.light-mode.alliance-theme .gold-button {
+  background: #e0c07a;
+  border-color: #f0d28f;
+  color: #1e2430;
+}
+
+body.light-mode.alliance-theme .gray-button {
+  background: #dce7f5;
+  border-color: #b6c8e6;
+  color: #10213d;
+}
+
+body.light-mode.alliance-theme .red-button {
+  background: #bf6660;
+  border-color: #e8b1ab;
+  color: #fff8f7;
+}
+
+body.light-mode.alliance-theme .blue-button {
+  background: #5f8fdb;
+  border-color: #a8c4ff;
+  color: #f5f9ff;
+}
+
+body.light-mode.alliance-theme input,
+body.light-mode.alliance-theme textarea,
+body.light-mode.alliance-theme select {
+  background: #ffffff;
+  border-color: #b6c8e6;
+  color: #10213d;
+}
+
 body.alliance-theme .status-online {
   color: #8ab6ff;
   text-shadow: 0 0 8px rgba(138, 182, 255, 0.5);
@@ -621,6 +821,107 @@ body.alliance-theme .theme-switcher {
   border-radius: 0;
   border: 2px solid var(--border-color);
   background: var(--bg-card);
+}
+
+.servers-page {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 1.6vw, 1.5rem);
+}
+
+.servers-toolbar {
+  gap: clamp(0.5rem, 1vw, 0.875rem);
+}
+
+.servers-toolbar input {
+  width: clamp(13rem, 20vw, 20rem);
+}
+
+.servers-grid {
+  display: grid;
+  gap: clamp(0.9rem, 1.2vw, 1.25rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+
+.servers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.server-view-shell,
+.server-orchestrator-shell,
+.server-empty-state {
+  border: 1px solid var(--border-color);
+}
+
+.server-orchestrator-shell {
+  overflow: hidden;
+}
+
+.server-card-panel,
+.server-list-item-panel {
+  min-width: 0;
+}
+
+.server-card-panel {
+  padding: clamp(0.9rem, 1vw, 1.1rem);
+}
+
+.server-card-panel .game-logo-right {
+  width: clamp(5.5rem, 10vw, 8.5rem);
+  max-height: clamp(3rem, 6vw, 5.5rem);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.server-list-item-panel img {
+  width: clamp(2.5rem, 4vw, 3.25rem);
+  height: clamp(2.5rem, 4vw, 3.25rem);
+}
+
+.server-card-panel .stat-card {
+  min-height: clamp(3rem, 5vw, 4rem);
+}
+
+.server-card-actions,
+.server-list-actions {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.server-card-actions .gray-button,
+.server-card-actions .gold-button,
+.server-card-actions .red-button,
+.server-card-actions .blue-button,
+.server-list-actions .gray-button,
+.server-list-actions .gold-button,
+.server-list-actions .red-button,
+.server-list-actions .blue-button {
+  width: 100%;
+  min-height: 2.5rem;
+}
+
+.server-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.75rem;
+}
+
+.server-view-shell h4,
+.server-orchestrator-shell h4,
+.server-empty-state h3,
+.server-view-shell p,
+.server-orchestrator-shell p,
+.server-empty-state p {
+  overflow-wrap: anywhere;
+}
+
+.servers-page .medieval-border,
+.servers-page .stone-texture {
+  width: 100%;
 }
 
 .theme-settings-panel {
@@ -803,6 +1104,19 @@ body.dark-mode .step-badge--active {
     font-size: clamp(14px, 2vw, 16px);
   }
 
+  .servers-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .servers-toolbar input {
+    width: 100%;
+  }
+
+  .servers-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .theme-switcher--admin {
     width: 100%;
     justify-content: center;
@@ -844,6 +1158,16 @@ body.dark-mode .step-badge--active {
   .red-button,
   .blue-button {
     padding: 0.7rem 0.9rem;
+  }
+
+  .server-card-panel,
+  .server-list-item-panel {
+    padding: 0.875rem;
+  }
+
+  .server-card-actions,
+  .server-list-actions {
+    grid-template-columns: 1fr;
   }
 }
 
