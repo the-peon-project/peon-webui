@@ -875,6 +875,14 @@ body.alliance-theme .theme-switcher {
   flex-shrink: 0;
 }
 
+.game-logo-large {
+  width: clamp(4rem, 8vw, 7rem);
+  max-width: 100%;
+  max-height: clamp(4rem, 8vw, 7rem);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .server-list-item-panel img {
   width: clamp(2.5rem, 4vw, 3.25rem);
   height: clamp(2.5rem, 4vw, 3.25rem);
@@ -1275,5 +1283,10 @@ body.dark-mode .step-badge--active {
   
   .game-logo-right {
     max-height: 48px;
+  }
+
+  .game-logo-large {
+    width: 64px;
+    max-height: 64px;
   }
 }
