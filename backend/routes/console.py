@@ -8,7 +8,7 @@ import aiohttp
 
 from core.database import get_db
 from core.security import get_current_user, decode_token
-from core.orchestrator_url import resolve_orchestrator_url
+from core.orchestrator_url import resolve_orchestrator_url_candidates
 from services.orchestrator import OrchestratorService
 
 router = APIRouter(prefix="/console")
@@ -33,25 +33,37 @@ async def get_server_logs(
         timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=20)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key']}
-            base_url = resolve_orchestrator_url(orch['base_url'])
-            url = f"{base_url}/api/v1/server/logs/{server_uid}?lines={lines}&session_only=true"
-            
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return {
-                        "logs": data.get('logs', []),
-                        "container_state": data.get('container_state'),
-                        "session_only": data.get('session_only', True),
-                        "server_uid": server_uid,
-                        "lines": lines
-                    }
+            last_error = None
+            for base_url in resolve_orchestrator_url_candidates(orch['base_url']):
+                url = f"{base_url}/api/v1/server/logs/{server_uid}?lines={lines}&session_only=true"
+                try:
+                    async with session.get(url, headers=headers) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            return {
+                                "logs": data.get('logs', []),
+                                "container_state": data.get('container_state'),
+                                "session_only": data.get('session_only', True),
+                                "server_uid": server_uid,
+                                "lines": lines
+                            }
 
-                detail = await response.text()
-                raise HTTPException(
-                    status_code=response.status,
-                    detail=f"Failed to fetch orchestrator logs: {detail or 'unknown error'}"
-                )
+                        detail = await response.text()
+                        last_error = HTTPException(
+                            status_code=response.status,
+                            detail=f"Failed to fetch orchestrator logs from [{base_url}]: {detail or 'unknown error'}"
+                        )
+                except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                    last_error = exc
+                    continue
+
+            if isinstance(last_error, HTTPException):
+                raise last_error
+            if isinstance(last_error, asyncio.TimeoutError):
+                raise HTTPException(status_code=504, detail="Request timeout")
+            if last_error:
+                raise HTTPException(status_code=500, detail=f"Error fetching logs: {str(last_error)}")
+            raise HTTPException(status_code=500, detail="Error fetching logs: no orchestrator URL candidates available")
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Request timeout")
     except HTTPException:
@@ -118,16 +130,30 @@ async def websocket_console(
     
     try:
         # Attempt to connect to orchestrator's WebSocket for logs
-        base_url = resolve_orchestrator_url(orch['base_url'])
-        orch_ws_url = f"{base_url.replace('http', 'ws')}/api/v1/ws/console/{server_uid}"
+        candidate_urls = resolve_orchestrator_url_candidates(orch['base_url'])
+        base_url = candidate_urls[0] if candidate_urls else orch['base_url']
+        orch_ws_urls = [f"{candidate.replace('http', 'ws')}/api/v1/ws/console/{server_uid}" for candidate in candidate_urls]
+        if not orch_ws_urls:
+            orch_ws_urls = [f"{base_url.replace('http', 'ws')}/api/v1/ws/console/{server_uid}"]
         
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.ws_connect(
-                    orch_ws_url,
-                    headers={"X-Api-Key": orch['api_key']},
-                    timeout=10
-                ) as orch_ws:
+                orch_ws = None
+                for ws_url in orch_ws_urls:
+                    try:
+                        orch_ws = await session.ws_connect(
+                            ws_url,
+                            headers={"X-Api-Key": orch['api_key']},
+                            timeout=10
+                        )
+                        break
+                    except Exception:
+                        continue
+
+                if orch_ws is None:
+                    raise RuntimeError("No websocket candidate URL available")
+
+                async with orch_ws:
                     # Relay messages from orchestrator to client
                     async def relay_from_orch():
                         async for msg in orch_ws:
@@ -172,22 +198,27 @@ async def websocket_console(
                         
                         # Fetch logs
                         headers = {"X-Api-Key": orch['api_key']}
-                        url = f"{base_url}/api/v1/server/logs/{server_uid}?lines=50&session_only=true"
-                        
-                        async with session.get(url, headers=headers, timeout=10) as response:
-                            if response.status == 200:
-                                data = await response.json()
-                                logs = data.get('logs', [])
-                                
-                                if len(logs) > last_log_count:
-                                    # Send only new logs
-                                    new_logs = logs[last_log_count:] if last_log_count > 0 else logs[-20:]
-                                    for log in new_logs:
-                                        await websocket.send_json({
-                                            "type": "log",
-                                            "data": log
-                                        })
-                                    last_log_count = len(logs)
+                        logs = []
+                        for candidate in candidate_urls:
+                            url = f"{candidate}/api/v1/server/logs/{server_uid}?lines=50&session_only=true"
+                            try:
+                                async with session.get(url, headers=headers, timeout=10) as response:
+                                    if response.status == 200:
+                                        data = await response.json()
+                                        logs = data.get('logs', [])
+                                        break
+                            except Exception:
+                                continue
+
+                        if len(logs) > last_log_count:
+                            # Send only new logs
+                            new_logs = logs[last_log_count:] if last_log_count > 0 else logs[-20:]
+                            for log in new_logs:
+                                await websocket.send_json({
+                                    "type": "log",
+                                    "data": log
+                                })
+                            last_log_count = len(logs)
                         
                         await asyncio.sleep(5)
                         
