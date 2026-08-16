@@ -971,6 +971,7 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
   const [currentOrchId, setCurrentOrchId] = useState(null);
   const [plans, setPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
+  const [planRefreshMessage, setPlanRefreshMessage] = useState('');
 
   const canManageServers = permissions?.can_manage_servers;
   const canManageOrchestrators = permissions?.can_manage_orchestrators;
@@ -999,20 +1000,42 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
     }
   }, [orchestrators, loadServers]);
 
-  // Load plans when deploy modal opens
-  const handleOpenDeployModal = async () => {
+  const loadPlans = useCallback(async () => {
     setLoadingPlans(true);
-    setPlans([]); // Reset plans before loading
-    setShowDeployModal(true);
     try {
       const response = await api.get('/proxy/plans');
       setPlans(response.data);
+      return response.data;
     } catch (err) {
       console.error('Failed to load plans:', err);
       alert('Failed to load game plans: ' + (err.response?.data?.detail || err.message));
+      return [];
     } finally {
       setLoadingPlans(false);
     }
+  }, []);
+
+  const handleReloadPlans = useCallback(async () => {
+    try {
+      setLoadingPlans(true);
+      setPlanRefreshMessage('');
+      await api.put('/proxy/plans');
+      await loadPlans();
+      setPlanRefreshMessage('Plans refreshed successfully.');
+    } catch (err) {
+      console.error('Failed to update plans:', err);
+      setPlanRefreshMessage('Failed to refresh plans.');
+      alert('Failed to update game plans: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoadingPlans(false);
+    }
+  }, [loadPlans]);
+
+  // Load plans when deploy modal opens
+  const handleOpenDeployModal = async () => {
+    setPlans([]); // Reset plans before loading
+    setShowDeployModal(true);
+    await loadPlans();
   };
 
   // Server action (start/stop/restart)
@@ -1076,7 +1099,7 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
           <Server className="w-6 h-6" /> Server Management
         </h2>
 
-        <div className="servers-toolbar flex items-center gap-3">
+        <div className="servers-toolbar flex items-center gap-3 flex-wrap">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1107,12 +1130,22 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
 
           {/* Actions */}
           {canManageServers && (
-            <button
-              onClick={handleOpenDeployModal}
-              className="gold-button px-4 py-2 rounded flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> Deploy
-            </button>
+            <>
+              <button
+                onClick={handleReloadPlans}
+                disabled={loadingPlans}
+                className="gray-button px-4 py-2 rounded flex items-center gap-2"
+              >
+                {loadingPlans ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Update Plans
+              </button>
+
+              <button
+                onClick={handleOpenDeployModal}
+                className="gold-button px-4 py-2 rounded flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Deploy
+              </button>
+            </>
           )}
           
           {canManageOrchestrators && (
@@ -1125,6 +1158,16 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
           )}
         </div>
       </div>
+
+      {planRefreshMessage && (
+        <div className={`rounded border px-3 py-2 text-sm ${
+          planRefreshMessage.startsWith('Failed')
+            ? 'bg-red-900/40 border-red-500 text-red-200'
+            : 'bg-green-900/40 border-green-500 text-green-200'
+        }`}>
+          {planRefreshMessage}
+        </div>
+      )}
 
       {/* Orchestrators & Servers */}
       {orchestrators.length === 0 ? (

@@ -159,6 +159,61 @@ async def get_plans(current_user: dict = Depends(get_current_user)):
     
     return plans
 
+@router.put("/plans")
+async def refresh_plans(
+    request: Request,
+    current_user: dict = Depends(get_current_admin_user),
+):
+    """Force configured orchestrators to refresh their game plan catalogue from the configured plans source."""
+    orchestrators = OrchestratorService.get_all()
+    if not orchestrators:
+        raise HTTPException(status_code=404, detail="No orchestrators configured")
+
+    results = []
+    failures = []
+
+    for orch in orchestrators:
+        try:
+            timeout = aiohttp.ClientTimeout(total=90, connect=10, sock_read=80)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                headers = {"X-Api-Key": orch['api_key']}
+                base_url = resolve_orchestrator_url(orch['base_url'])
+                async with session.put(f"{base_url}/api/v1/plans", headers=headers) as response:
+                    payload = await response.json() if response.content else {}
+                    if response.status in [200, 201]:
+                        results.append({"orchestrator_id": orch['id'], "orchestrator_name": orch['name'], "response": payload})
+                    else:
+                        failures.append({
+                            "orchestrator_id": orch['id'],
+                            "orchestrator_name": orch['name'],
+                            "status": response.status,
+                            "detail": payload.get('detail') or payload.get('info') or 'Plan refresh failed',
+                        })
+        except asyncio.TimeoutError:
+            failures.append({
+                "orchestrator_id": orch['id'],
+                "orchestrator_name": orch['name'],
+                "status": 504,
+                "detail": "Orchestrator request timeout",
+            })
+        except Exception as exc:
+            failures.append({
+                "orchestrator_id": orch['id'],
+                "orchestrator_name": orch['name'],
+                "status": 500,
+                "detail": str(exc),
+            })
+
+    if failures and not results:
+        raise HTTPException(status_code=500, detail={"message": "Failed to refresh plans", "failures": failures})
+
+    return {
+        "success": True,
+        "updated": results,
+        "failures": failures,
+        "message": "Plan refresh requested" if results else "No orchestrator plan refresh succeeded",
+    }
+
 @router.get("/{orch_id}/servers")
 async def get_servers(orch_id: str, current_user: dict = Depends(get_current_user)):
     """Get servers from specific orchestrator (live fetch)"""
