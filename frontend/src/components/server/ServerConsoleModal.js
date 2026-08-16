@@ -39,7 +39,7 @@ export const ServerConsoleModal = ({ server, orchestratorId, onClose }) => {
         setError(response.data.note);
       }
     } catch (err) {
-      setError('Failed to fetch logs');
+      setError(err.response?.data?.detail || 'Failed to fetch logs');
     } finally {
       setLoading(false);
     }

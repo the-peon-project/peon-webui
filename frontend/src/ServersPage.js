@@ -84,8 +84,20 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
   const isRunning = server.container_state === 'running';
   const isStopped = ['exited', 'created'].includes(server.container_state);
 
+  const handleCardClick = (event) => {
+    if (!isRunning || !onConsole) return;
+    if (event.target.closest('button')) return;
+    onConsole(server);
+  };
+
   return (
-    <div id={elementId} className="server-card-panel server-anchor-target stone-texture rounded card-hover animate-fade-in" data-testid="server-card">
+    <div
+      id={elementId}
+      className={`server-card-panel server-anchor-target stone-texture rounded card-hover animate-fade-in ${isRunning ? 'cursor-pointer' : ''}`}
+      data-testid="server-card"
+      onClick={handleCardClick}
+      title={isRunning ? 'Click to open live container logs' : undefined}
+    >
       {/* Header with Logo on Right */}
       <div className="flex justify-between items-start gap-3 mb-3">
         <div className="flex-1 min-w-0">
@@ -209,12 +221,24 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
 };
 
 // Server List Item (List View)
-const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, canManageServers, elementId }) => {
+const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, onConsole, canManageServers, elementId }) => {
   const serverUid = getServerUid(server);
   const isRunning = server.container_state === 'running';
 
+  const handleRowClick = (event) => {
+    if (!isRunning || !onConsole) return;
+    if (event.target.closest('button')) return;
+    onConsole(server);
+  };
+
   return (
-    <div id={elementId} className="server-list-item-panel server-anchor-target stone-texture p-3 rounded flex items-center gap-3 animate-fade-in" data-testid="server-list-item">
+    <div
+      id={elementId}
+      className={`server-list-item-panel server-anchor-target stone-texture p-3 rounded flex items-center gap-3 animate-fade-in ${isRunning ? 'cursor-pointer' : ''}`}
+      data-testid="server-list-item"
+      onClick={handleRowClick}
+      title={isRunning ? 'Click to open live container logs' : undefined}
+    >
       <img 
         src={getGameLogoUrl(server.game_uid)}
         alt={server.game_uid}
@@ -461,6 +485,7 @@ const OrchestratorSection = ({
                           onInfo={onInfo}
                           onUpdate={onUpdate}
                           onDelete={onDeleteServer}
+                          onConsole={onConsole}
                           canManageServers={canManageServers}
                           elementId={getServerAnchorId(orchestrator.id, server)}
                         />

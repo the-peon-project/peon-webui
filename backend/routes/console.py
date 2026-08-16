@@ -3,13 +3,11 @@ Server Console Streaming API
 Real-time console log streaming for game servers
 """
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from typing import Optional
 import asyncio
 import aiohttp
-import json
 
 from core.database import get_db
-from core.security import get_current_user, get_current_admin_user, decode_token
+from core.security import get_current_user, decode_token
 from core.orchestrator_url import resolve_orchestrator_url
 from services.orchestrator import OrchestratorService
 
@@ -32,44 +30,34 @@ async def get_server_logs(
         raise HTTPException(status_code=404, detail="Orchestrator not found")
     
     try:
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=20)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key']}
-            # Try to get logs from orchestrator
             base_url = resolve_orchestrator_url(orch['base_url'])
-            url = f"{base_url}/api/v1/server/logs/{server_uid}?lines={lines}"
+            url = f"{base_url}/api/v1/server/logs/{server_uid}?lines={lines}&session_only=true"
             
-            async with session.get(url, headers=headers, timeout=30) as response:
+            async with session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
                     return {
                         "logs": data.get('logs', []),
+                        "container_state": data.get('container_state'),
+                        "session_only": data.get('session_only', True),
                         "server_uid": server_uid,
                         "lines": lines
                     }
-                else:
-                    # Fallback: Return mock logs if endpoint doesn't exist
-                    return {
-                        "logs": [
-                            f"[INFO] Server {server_uid} console logs",
-                            "[INFO] Logs streaming is available when the orchestrator supports it",
-                            "[INFO] Contact your orchestrator administrator to enable this feature"
-                        ],
-                        "server_uid": server_uid,
-                        "lines": lines,
-                        "note": "Live logs require orchestrator v2.0+ with logs endpoint"
-                    }
+
+                detail = await response.text()
+                raise HTTPException(
+                    status_code=response.status,
+                    detail=f"Failed to fetch orchestrator logs: {detail or 'unknown error'}"
+                )
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Request timeout")
+    except HTTPException:
+        raise
     except Exception as e:
-        # Return helpful message instead of error
-        return {
-            "logs": [
-                f"[WARNING] Could not fetch logs: {str(e)}",
-                "[INFO] This may be due to orchestrator configuration"
-            ],
-            "server_uid": server_uid,
-            "error": str(e)
-        }
+        raise HTTPException(status_code=500, detail=f"Error fetching logs: {str(e)}")
 
 
 @router.websocket("/ws/{orch_id}/{server_uid}")
@@ -184,7 +172,7 @@ async def websocket_console(
                         
                         # Fetch logs
                         headers = {"X-Api-Key": orch['api_key']}
-                        url = f"{base_url}/api/v1/server/logs/{server_uid}?lines=50"
+                        url = f"{base_url}/api/v1/server/logs/{server_uid}?lines=50&session_only=true"
                         
                         async with session.get(url, headers=headers, timeout=10) as response:
                             if response.status == 200:
