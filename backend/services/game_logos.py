@@ -64,11 +64,12 @@ def _find_local_warplan_logo(game_uid: str) -> Optional[Path]:
     return None
 
 
-def _download_remote_logo(game_uid: str) -> Optional[Path]:
+def _download_remote_logo(game_uid: str, preferred_extensions: Optional[list[str]] = None) -> Optional[Path]:
     cache_dir = _ensure_cache_dir()
+    extensions = preferred_extensions or SUPPORTED_LOGO_EXTENSIONS
 
     for branch in REMOTE_WARPLANS_BRANCHES:
-        for ext in SUPPORTED_LOGO_EXTENSIONS:
+        for ext in extensions:
             remote_url = (
                 f"https://raw.githubusercontent.com/the-peon-project/peon-warplans/"
                 f"{branch}/{game_uid}/logo.{ext}"
@@ -104,6 +105,28 @@ def ensure_logo_for_game(game_uid: str) -> Optional[Path]:
         return downloaded
 
     return None
+
+
+def ensure_png_logo_for_game(game_uid: str) -> Optional[Path]:
+    """Best-effort PNG-first logo hydration; falls back to any supported image."""
+    safe_uid = _safe_game_uid(game_uid)
+    if not safe_uid:
+        return None
+
+    cache_dir = _ensure_cache_dir()
+    cached_png = cache_dir / f"{safe_uid}.png"
+    if cached_png.is_file():
+        return cached_png
+
+    local_logo = _find_local_warplan_logo(safe_uid)
+    if local_logo and local_logo.suffix.lower() == ".png":
+        if cached_logo := _copy_to_cache(local_logo, safe_uid):
+            return cached_logo
+
+    if downloaded_png := _download_remote_logo(safe_uid, preferred_extensions=["png"]):
+        return downloaded_png
+
+    return ensure_logo_for_game(safe_uid)
 
 
 def resolve_logo_path(game_uid: str, requested_ext: Optional[str] = None) -> Optional[Path]:

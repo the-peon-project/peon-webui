@@ -9,14 +9,83 @@ import { ServerInfoModal, ServerUpdateModal, ServerConsoleModal } from './compon
 import { LoadingSpinner, SkeletonCard } from './components/common/Loading';
 import { getGameLogoUrl, handleLogoError } from './utils/logos';
 
+const normalizeAnchorPart = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const getServerUid = (server) => `${server.game_uid}.${server.servername}`;
+
+const getServerAnchorId = (orchId, server) =>
+  `server-${normalizeAnchorPart(orchId)}-${normalizeAnchorPart(getServerUid(server))}`;
+
+const humanizeGameUid = (value) => {
+  const normalized = String(value || '').trim().replace(/[-_]+/g, ' ');
+  if (!normalized) return 'Unknown Game';
+  return normalized.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const getPlanDisplayName = (plan) =>
+  String(plan?.display_name || plan?.name || '').trim() || humanizeGameUid(plan?.game_uid);
+
+const toBooleanValue = (value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'off', ''].includes(normalized)) return false;
+  }
+  return Boolean(value);
+};
+
+const getNormalizedEnvField = (key, config) => {
+  if (config && typeof config === 'object' && !Array.isArray(config)) {
+    const normalizedType = String(config.type || 'text').toLowerCase();
+    const fieldType =
+      normalizedType === 'bool' || normalizedType === 'checkbox'
+        ? 'boolean'
+        : normalizedType;
+    const hasDefault = Object.prototype.hasOwnProperty.call(config, 'default');
+    const defaultValue = hasDefault ? config.default : '';
+    const options = Array.isArray(config.options)
+      ? config.options
+      : config.options && typeof config.options === 'object'
+        ? Object.entries(config.options).map(([value, label]) => ({ value, label }))
+        : [];
+    return {
+      key,
+      label: config.label || key,
+      description: config.description || '',
+      placeholder: config.placeholder || (defaultValue ?? ''),
+      required: Boolean(config.required),
+      type: fieldType,
+      defaultValue: fieldType === 'boolean' ? toBooleanValue(defaultValue) : defaultValue ?? '',
+      options,
+    };
+  }
+
+  return {
+    key,
+    label: key,
+    description: '',
+    placeholder: config ?? '',
+    required: false,
+    type: typeof config === 'boolean' ? 'boolean' : 'text',
+    defaultValue: typeof config === 'boolean' ? config : config ?? '',
+    options: [],
+  };
+};
+
 // Server Card Component (Grid View) - Logo on Right
-const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, onConsole, canManageServers }) => {
-  const serverUid = `${server.game_uid}.${server.servername}`;
+const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, onConsole, canManageServers, elementId }) => {
+  const serverUid = getServerUid(server);
   const isRunning = server.container_state === 'running';
   const isStopped = ['exited', 'created'].includes(server.container_state);
 
   return (
-    <div className="server-card-panel stone-texture rounded card-hover animate-fade-in" data-testid="server-card">
+    <div id={elementId} className="server-card-panel server-anchor-target stone-texture rounded card-hover animate-fade-in" data-testid="server-card">
       {/* Header with Logo on Right */}
       <div className="flex justify-between items-start gap-3 mb-3">
         <div className="flex-1 min-w-0">
@@ -140,12 +209,12 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
 };
 
 // Server List Item (List View)
-const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, canManageServers }) => {
-  const serverUid = `${server.game_uid}.${server.servername}`;
+const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, canManageServers, elementId }) => {
+  const serverUid = getServerUid(server);
   const isRunning = server.container_state === 'running';
 
   return (
-    <div className="server-list-item-panel stone-texture p-3 rounded flex items-center gap-3 animate-fade-in" data-testid="server-list-item">
+    <div id={elementId} className="server-list-item-panel server-anchor-target stone-texture p-3 rounded flex items-center gap-3 animate-fade-in" data-testid="server-list-item">
       <img 
         src={getGameLogoUrl(server.game_uid)}
         alt={server.game_uid}
@@ -225,7 +294,58 @@ const OrchestratorSection = ({
     server.game_uid?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const runningCount = filteredServers.filter(s => s.container_state === 'running').length;
+  const runningServers = filteredServers.filter((server) => server.container_state === 'running');
+  const runningCount = runningServers.length;
+
+  const groupedServers = filteredServers.reduce((groups, server) => {
+    const gameUid = server.game_uid || 'unknown';
+    if (!groups[gameUid]) {
+      groups[gameUid] = [];
+    }
+    groups[gameUid].push(server);
+    return groups;
+  }, {});
+
+  const sortServersWithinGroup = (a, b) => {
+    const aRunning = a.container_state === 'running';
+    const bRunning = b.container_state === 'running';
+
+    if (aRunning !== bRunning) {
+      return aRunning ? -1 : 1;
+    }
+
+    return (a.servername || '').localeCompare(b.servername || '', undefined, { sensitivity: 'base' });
+  };
+
+  const sortedGameGroups = Object.entries(groupedServers)
+    .sort(([gameA], [gameB]) => gameA.localeCompare(gameB, undefined, { sensitivity: 'base' }))
+    .map(([gameUid, gameServers]) => [gameUid, [...gameServers].sort(sortServersWithinGroup)]);
+
+  const sortedRunningServers = [...runningServers].sort((a, b) => {
+    const gameOrder = (a.game_uid || '').localeCompare(b.game_uid || '', undefined, { sensitivity: 'base' });
+    if (gameOrder !== 0) return gameOrder;
+    return (a.servername || '').localeCompare(b.servername || '', undefined, { sensitivity: 'base' });
+  });
+
+  const handleJumpToServer = (server) => {
+    const scrollToTarget = () => {
+      const targetId = getServerAnchorId(orchestrator.id, server);
+      const target = document.getElementById(targetId);
+      if (!target) return false;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
+    };
+
+    if (!expanded) {
+      setExpanded(true);
+    }
+
+    requestAnimationFrame(() => {
+      if (!scrollToTarget()) {
+        setTimeout(scrollToTarget, 60);
+      }
+    });
+  };
 
   return (
     <div className="server-orchestrator-shell mb-6 animate-fade-in">
@@ -280,37 +400,74 @@ const OrchestratorSection = ({
               <Server className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>No servers found</p>
             </div>
-          ) : viewMode === 'grid' ? (
-            <div className="servers-grid">
-              {filteredServers.map((server) => (
-                <ServerCard
-                  key={`${orchestrator.id}_${server.game_uid}_${server.servername}`}
-                  server={server}
-                  orchId={orchestrator.id}
-                  loading={actionLoading}
-                  onAction={onAction}
-                  onInfo={onInfo}
-                  onUpdate={onUpdate}
-                  onDelete={onDeleteServer}
-                  onConsole={onConsole}
-                  canManageServers={canManageServers}
-                />
-              ))}
-            </div>
           ) : (
-            <div className="servers-list">
-              {filteredServers.map((server) => (
-                <ServerListItem
-                  key={`${orchestrator.id}_${server.game_uid}_${server.servername}`}
-                  server={server}
-                  orchId={orchestrator.id}
-                  loading={actionLoading}
-                  onAction={onAction}
-                  onInfo={onInfo}
-                  onUpdate={onUpdate}
-                  onDelete={onDeleteServer}
-                  canManageServers={canManageServers}
-                />
+            <div className="space-y-4">
+              {sortedRunningServers.length > 0 && (
+                <div className="server-running-quicklist rounded p-3">
+                  <p className="text-xs uppercase tracking-wide text-gray-300 mb-2">
+                    Running Servers
+                  </p>
+                  <div className="server-running-chip-list">
+                    {sortedRunningServers.map((server) => (
+                      <button
+                        key={`running-${orchestrator.id}-${server.game_uid}-${server.servername}`}
+                        type="button"
+                        onClick={() => handleJumpToServer(server)}
+                        className="server-running-chip"
+                        title={`Jump to ${server.servername}`}
+                      >
+                        <span className="status-online">●</span>
+                        <span>{server.game_uid}</span>
+                        <span className="text-gray-400">/</span>
+                        <span>{server.servername}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {sortedGameGroups.map(([gameUid, gameServers]) => (
+                <div key={`${orchestrator.id}-group-${gameUid}`} className="space-y-3">
+                  <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-300">
+                    {gameUid}
+                  </h4>
+                  {viewMode === 'grid' ? (
+                    <div className="servers-grid">
+                      {gameServers.map((server) => (
+                        <ServerCard
+                          key={`${orchestrator.id}_${server.game_uid}_${server.servername}`}
+                          server={server}
+                          orchId={orchestrator.id}
+                          loading={actionLoading}
+                          onAction={onAction}
+                          onInfo={onInfo}
+                          onUpdate={onUpdate}
+                          onDelete={onDeleteServer}
+                          onConsole={onConsole}
+                          canManageServers={canManageServers}
+                          elementId={getServerAnchorId(orchestrator.id, server)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="servers-list">
+                      {gameServers.map((server) => (
+                        <ServerListItem
+                          key={`${orchestrator.id}_${server.game_uid}_${server.servername}`}
+                          server={server}
+                          orchId={orchestrator.id}
+                          loading={actionLoading}
+                          onAction={onAction}
+                          onInfo={onInfo}
+                          onUpdate={onUpdate}
+                          onDelete={onDeleteServer}
+                          canManageServers={canManageServers}
+                          elementId={getServerAnchorId(orchestrator.id, server)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -324,26 +481,62 @@ const OrchestratorSection = ({
 const DeployServerModal = ({ orchestrators, plans, loadingPlans, onClose, onDeploy }) => {
   const [selectedOrch, setSelectedOrch] = useState(orchestrators[0]?.id || '');
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [planFields, setPlanFields] = useState([]);
+  const [planSearch, setPlanSearch] = useState('');
+  const [showPlanList, setShowPlanList] = useState(true);
   const [serverName, setServerName] = useState('');
   const [envVars, setEnvVars] = useState({});
+  const [validationError, setValidationError] = useState('');
   const [deploying, setDeploying] = useState(false);
+
+  useEffect(() => {
+    if (!selectedOrch && orchestrators.length > 0) {
+      setSelectedOrch(orchestrators[0].id);
+    }
+  }, [orchestrators, selectedOrch]);
 
   const handleSelectPlan = (plan) => {
     setSelectedPlan(plan);
     // Initialize environment variables from plan
+    const normalizedFields = Object.entries(plan.environment || {}).map(([key, config]) =>
+      getNormalizedEnvField(key, config)
+    );
     const defaultEnv = {};
-    if (plan.environment) {
-      Object.entries(plan.environment).forEach(([key, config]) => {
-        defaultEnv[key] = config.default || '';
-      });
-    }
+    normalizedFields.forEach((field) => {
+      defaultEnv[field.key] = field.defaultValue;
+    });
+    setPlanFields(normalizedFields);
     setEnvVars(defaultEnv);
+    setShowPlanList(false);
+    setValidationError('');
   };
+
+  const filteredPlans = plans.filter((plan) => {
+    const query = planSearch.trim().toLowerCase();
+    if (!query) return true;
+    const displayName = getPlanDisplayName(plan).toLowerCase();
+    return (
+      displayName.includes(query) ||
+      String(plan.game_uid || '').toLowerCase().includes(query)
+    );
+  });
 
   const handleDeploy = async () => {
     if (!selectedPlan || !serverName.trim()) return;
-    
+    if (!selectedOrch) {
+      setValidationError('Select a target orchestrator.');
+      return;
+    }
+    const missingRequiredField = planFields.find(
+      (field) => field.required && !String(envVars[field.key] ?? '').trim()
+    );
+    if (missingRequiredField) {
+      setValidationError(`${missingRequiredField.label} is required.`);
+      return;
+    }
+
     setDeploying(true);
+    setValidationError('');
     try {
       await onDeploy({
         orchestrator_id: selectedOrch,
@@ -390,7 +583,18 @@ const DeployServerModal = ({ orchestrators, plans, loadingPlans, onClose, onDepl
 
         {/* Plan Selection */}
         <div className="mb-6">
-          <label className="block text-sm text-gray-300 mb-2">Select Game Plan</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm text-gray-300">Select Game Plan</label>
+            {selectedPlan && !showPlanList && (
+              <button
+                type="button"
+                onClick={() => setShowPlanList(true)}
+                className="gray-button px-3 py-1 rounded text-xs"
+              >
+                Change Plan
+              </button>
+            )}
+          </div>
           
           {loadingPlans ? (
             <div className="flex items-center justify-center py-8">
@@ -402,27 +606,62 @@ const DeployServerModal = ({ orchestrators, plans, loadingPlans, onClose, onDepl
               <AlertCircle className="w-5 h-5 text-yellow-400" />
               <p className="text-yellow-300">No game plans available. Add plans to the warplans directory.</p>
             </div>
+          ) : !showPlanList && selectedPlan ? (
+            <div className="bg-black/30 border border-slate-700 rounded p-3 flex items-center gap-3">
+              <img
+                src={getGameLogoUrl(selectedPlan.game_uid)}
+                alt={selectedPlan.game_uid}
+                className="w-10 h-10 object-contain"
+                onError={handleLogoError}
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">{getPlanDisplayName(selectedPlan)}</p>
+                <p className="text-xs text-gray-400 truncate">{selectedPlan.game_uid}</p>
+              </div>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {plans.map((plan) => (
-                <button
-                  key={plan.game_uid}
-                  onClick={() => handleSelectPlan(plan)}
-                  className={`p-4 rounded-lg text-left transition-all ${
-                    selectedPlan?.game_uid === plan.game_uid
-                      ? 'bg-slate-900/50 border-2 border-sky-500'
-                      : 'bg-black/30 border-2 border-transparent hover:border-slate-700'
-                  }`}
-                >
-                  <img 
-                    src={getGameLogoUrl(plan.game_uid)}
-                    alt={plan.game_uid}
-                    className="w-12 h-12 object-contain mx-auto mb-2"
-                    onError={handleLogoError}
-                  />
-                  <h4 className="font-semibold text-sm text-center truncate">{plan.name || plan.game_uid}</h4>
-                </button>
-              ))}
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={planSearch}
+                  onChange={(e) => setPlanSearch(e.target.value)}
+                  placeholder="Search plans by name or game UID..."
+                  className="w-full pl-10"
+                />
+              </div>
+
+              {filteredPlans.length === 0 ? (
+                <div className="bg-yellow-900/20 border border-yellow-700/50 p-4 rounded flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-yellow-400" />
+                  <p className="text-yellow-300">No plans match your search.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {filteredPlans.map((plan) => (
+                    <button
+                      type="button"
+                      key={plan.game_uid}
+                      onClick={() => handleSelectPlan(plan)}
+                      className={`p-4 rounded-lg text-left transition-all ${
+                        selectedPlan?.game_uid === plan.game_uid
+                          ? 'bg-slate-900/50 border-2 border-sky-500'
+                          : 'bg-black/30 border-2 border-transparent hover:border-slate-700'
+                      }`}
+                    >
+                      <img
+                        src={getGameLogoUrl(plan.game_uid)}
+                        alt={plan.game_uid}
+                        className="w-12 h-12 object-contain mx-auto mb-2"
+                        onError={handleLogoError}
+                      />
+                      <h4 className="font-semibold text-sm text-center truncate">{getPlanDisplayName(plan)}</h4>
+                      <p className="text-xs text-gray-400 text-center truncate">{plan.game_uid}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -444,29 +683,77 @@ const DeployServerModal = ({ orchestrators, plans, loadingPlans, onClose, onDepl
             </div>
 
             {/* Environment Variables from Plan */}
-            {selectedPlan.environment && Object.keys(selectedPlan.environment).length > 0 && (
+            {planFields.length > 0 && (
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Configuration</label>
                 <div className="space-y-3 bg-black/20 p-4 rounded">
-                  {Object.entries(selectedPlan.environment).map(([key, config]) => (
-                    <div key={key}>
+                  {planFields.map((field) => (
+                    <div key={field.key}>
                       <label className="block text-xs text-gray-400 mb-1">
-                        {config.label || key}
-                        {config.required && <span className="text-red-400">*</span>}
+                        {field.label}
+                        {field.required && <span className="text-red-400">*</span>}
                       </label>
-                      <input
-                        type={config.type === 'password' ? 'password' : 'text'}
-                        value={envVars[key] || ''}
-                        onChange={(e) => setEnvVars({ ...envVars, [key]: e.target.value })}
-                        placeholder={config.placeholder || config.default || ''}
-                        className="w-full text-sm"
-                      />
-                      {config.description && (
-                        <p className="text-xs text-gray-500 mt-1">{config.description}</p>
+                      {field.type === 'boolean' ? (
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(envVars[field.key])}
+                            onChange={(e) => setEnvVars({ ...envVars, [field.key]: e.target.checked })}
+                          />
+                          Enabled
+                        </label>
+                      ) : field.type === 'select' && field.options.length > 0 ? (
+                        <select
+                          value={String(envVars[field.key] ?? '')}
+                          onChange={(e) => setEnvVars({ ...envVars, [field.key]: e.target.value })}
+                          className="w-full text-sm"
+                        >
+                          <option value="">Select {field.label}</option>
+                          {field.options.map((option) => {
+                            const optionValue =
+                              option && typeof option === 'object' && Object.prototype.hasOwnProperty.call(option, 'value')
+                                ? option.value
+                                : option;
+                            const optionLabel =
+                              option && typeof option === 'object' && Object.prototype.hasOwnProperty.call(option, 'label')
+                                ? option.label
+                                : optionValue;
+                            return (
+                              <option key={`${field.key}_${String(optionValue)}`} value={String(optionValue ?? '')}>
+                                {String(optionLabel ?? optionValue ?? '')}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      ) : field.type === 'textarea' ? (
+                        <textarea
+                          value={String(envVars[field.key] ?? '')}
+                          onChange={(e) => setEnvVars({ ...envVars, [field.key]: e.target.value })}
+                          placeholder={String(field.placeholder ?? '')}
+                          className="w-full text-sm"
+                          rows={3}
+                        />
+                      ) : (
+                        <input
+                          type={field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : 'text'}
+                          value={String(envVars[field.key] ?? '')}
+                          onChange={(e) => setEnvVars({ ...envVars, [field.key]: e.target.value })}
+                          placeholder={String(field.placeholder ?? '')}
+                          className="w-full text-sm"
+                        />
+                      )}
+                      {field.description && (
+                        <p className="text-xs text-gray-500 mt-1">{field.description}</p>
                       )}
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {validationError && (
+              <div className="bg-red-900/30 border border-red-700/50 rounded p-3 text-sm text-red-300">
+                {validationError}
               </div>
             )}
           </div>
@@ -474,10 +761,11 @@ const DeployServerModal = ({ orchestrators, plans, loadingPlans, onClose, onDepl
 
         {/* Actions */}
         <div className="flex gap-3 pt-4 border-t border-gray-700">
-          <button onClick={onClose} className="gray-button flex-1 py-2 rounded">
+          <button type="button" onClick={onClose} className="gray-button flex-1 py-2 rounded">
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleDeploy}
             disabled={deploying || !selectedPlan || !serverName.trim()}
             className="gold-button flex-1 py-2 rounded flex items-center justify-center gap-2"

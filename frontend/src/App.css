@@ -840,13 +840,55 @@ body.alliance-theme .theme-switcher {
 .servers-grid {
   display: grid;
   gap: clamp(0.9rem, 1.2vw, 1.25rem);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 17rem));
+  grid-auto-rows: 22rem;
+  justify-content: flex-start;
 }
 
 .servers-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.server-running-quicklist {
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.server-running-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.server-running-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.server-running-chip:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.server-anchor-target {
+  scroll-margin-top: 1rem;
+}
+
+body.light-mode .server-running-quicklist {
+  background: #ffffff;
+}
+
+body.light-mode .server-running-chip {
+  background: #f8fafc;
 }
 
 .server-view-shell,
@@ -866,6 +908,12 @@ body.alliance-theme .theme-switcher {
 
 .server-card-panel {
   padding: clamp(0.9rem, 1vw, 1.1rem);
+  height: 100%;
+  width: 100%;
+  min-height: 22rem;
+  max-height: 22rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .server-card-panel .game-logo-right {
@@ -897,6 +945,10 @@ body.alliance-theme .theme-switcher {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.server-card-actions {
+  margin-top: auto;
 }
 
 .server-card-actions .gray-button,

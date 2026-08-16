@@ -42,6 +42,12 @@ export const handleLogoError = (event, gameUid) => {
   const currentSrc = img.src;
 
   if (img.dataset.logoFallbackApplied === '1') {
+    const fallbackUrl = getGameLogoUrl('logo');
+    if (img.src !== fallbackUrl) {
+      img.src = fallbackUrl;
+      img.dataset.logoFallbackApplied = '2';
+      return;
+    }
     img.style.display = 'none';
     return;
   }

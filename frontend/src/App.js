@@ -330,6 +330,11 @@ const Login = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    document.body.classList.add('dark-mode', 'default-theme');
+    document.body.classList.remove('light-mode', 'horde-theme', 'alliance-theme', 'clean-theme');
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

@@ -16,7 +16,7 @@ from core.security import get_current_user, get_current_admin_user, decode_token
 from core.orchestrator_url import resolve_orchestrator_url, resolve_orchestrator_url_candidates
 from services.orchestrator import OrchestratorService
 from services.audit import AuditService
-from services.game_logos import ensure_logo_for_game
+from services.game_logos import ensure_png_logo_for_game
 
 router = APIRouter(prefix="/proxy")
 docs_security = HTTPBearer(auto_error=False)
@@ -28,6 +28,30 @@ class DeployServerRequest(BaseModel):
 
 class UpdateServerRequest(BaseModel):
     mode: str = "full"  # full, quick, etc.
+
+
+def _humanize_game_uid(game_uid: str) -> str:
+    uid = (game_uid or "").strip().replace("-", " ").replace("_", " ")
+    if not uid:
+        return "Unknown Game"
+    if " " in uid:
+        return " ".join(part.capitalize() for part in uid.split())
+    return uid.capitalize()
+
+
+def _read_plan_display_name(plan_dir: str, game_uid: str) -> str:
+    readme_path = os.path.join(plan_dir, "README.md")
+    try:
+        with open(readme_path, "r", encoding="utf-8") as readme_file:
+            for line in readme_file:
+                stripped = line.strip()
+                if stripped.startswith("# "):
+                    heading = stripped[2:].strip()
+                    if heading:
+                        return heading
+    except OSError:
+        pass
+    return _humanize_game_uid(game_uid)
 
 
 def _resolve_docs_user(
@@ -120,15 +144,15 @@ async def get_plans(current_user: dict = Depends(get_current_user)):
     warplans_dir = "/app/peon-warplans"
     
     if os.path.exists(warplans_dir):
-        for item in os.listdir(warplans_dir):
+        for item in sorted(os.listdir(warplans_dir)):
+            game_dir = os.path.join(warplans_dir, item)
             plan_file = os.path.join(warplans_dir, item, "plan.json")
             if os.path.isfile(plan_file):
                 try:
-                    with open(plan_file, 'r') as f:
+                    with open(plan_file, 'r', encoding='utf-8') as f:
                         plan_data = json.load(f)
                         plan_data['game_uid'] = item
-                        # Hydrate and cache a game logo so frontend cards resolve immediately.
-                        ensure_logo_for_game(item)
+                        plan_data['display_name'] = _read_plan_display_name(game_dir, item)
                         plans.append(plan_data)
                 except Exception:
                     pass
@@ -293,7 +317,7 @@ async def deploy_server(
 
     # Best-effort logo hydration for newly deployed recipe/game combinations.
     try:
-        ensure_logo_for_game(deploy_data.game_uid)
+        ensure_png_logo_for_game(deploy_data.game_uid)
     except Exception:
         pass
     
