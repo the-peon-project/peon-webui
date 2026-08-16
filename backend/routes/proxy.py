@@ -165,7 +165,7 @@ async def refresh_plans(
     current_user: dict = Depends(get_current_admin_user),
 ):
     """Force configured orchestrators to refresh their game plan catalogue from the configured plans source."""
-    orchestrators = OrchestratorService.get_all()
+    orchestrators = OrchestratorService.get_all(current_user['id'], current_user['role'])
     if not orchestrators:
         raise HTTPException(status_code=404, detail="No orchestrators configured")
 
