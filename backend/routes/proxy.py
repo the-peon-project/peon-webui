@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from typing import Dict, Any, Optional
 import json
 import os
+import uuid
 import asyncio
 import aiohttp
 from urllib.parse import quote_plus
@@ -28,6 +29,14 @@ class DeployServerRequest(BaseModel):
 
 class UpdateServerRequest(BaseModel):
     mode: str = "full"  # full, quick, etc.
+
+
+class GrantServerAccessRequest(BaseModel):
+    user_id: str
+    permissions: str = "manage"
+
+
+ALLOWED_SERVER_LINK_PERMISSIONS = {'read', 'manage', 'owner'}
 
 
 def _humanize_game_uid(game_uid: str) -> str:
@@ -214,6 +223,124 @@ async def refresh_plans(
         "message": "Plan refresh requested" if results else "No orchestrator plan refresh succeeded",
     }
 
+
+@router.get("/{orch_id}/server/{server_uid}/access")
+async def get_server_access_users(
+    orch_id: str,
+    server_uid: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """List users and their current access for a server."""
+    if not OrchestratorService.check_user_access(current_user['id'], orch_id, current_user['role']):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not OrchestratorService.can_manage_server(current_user['id'], orch_id, server_uid, current_user['role']):
+        raise HTTPException(status_code=403, detail="Server access management requires server owner or admin access")
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT
+            u.id,
+            u.username,
+            u.email,
+            u.role,
+            CASE WHEN uoa.id IS NOT NULL THEN 1 ELSE 0 END AS has_orchestrator_access,
+            sl.permissions AS server_permission
+        FROM users u
+        LEFT JOIN user_orchestrator_access uoa
+            ON uoa.user_id = u.id AND uoa.orchestrator_id = ?
+        LEFT JOIN server_links sl
+            ON sl.user_id = u.id AND sl.orchestrator_id = ? AND sl.server_uid = ?
+        ORDER BY u.username COLLATE NOCASE ASC
+    ''', (orch_id, orch_id, server_uid))
+    users = [dict_from_row(row) for row in cursor.fetchall()]
+    conn.close()
+
+    return {
+        "server_uid": server_uid,
+        "users": users,
+    }
+
+
+@router.post("/{orch_id}/server/{server_uid}/access")
+async def grant_server_access(
+    orch_id: str,
+    server_uid: str,
+    payload: GrantServerAccessRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Grant or update a user's access to a specific server."""
+    if not OrchestratorService.check_user_access(current_user['id'], orch_id, current_user['role']):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not OrchestratorService.can_manage_server(current_user['id'], orch_id, server_uid, current_user['role']):
+        raise HTTPException(status_code=403, detail="Server access management requires server owner or admin access")
+
+    requested_permission = str(payload.permissions or 'manage').strip().lower()
+    if requested_permission not in ALLOWED_SERVER_LINK_PERMISSIONS:
+        raise HTTPException(status_code=400, detail="Invalid permission level")
+
+    if requested_permission == 'owner' and current_user['role'] != 'admin':
+        raise HTTPException(status_code=403, detail="Only admins can grant owner access")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, username FROM users WHERE id = ?", (payload.user_id,))
+    target_user = cursor.fetchone()
+    if not target_user:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Target user not found")
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Ensure the target user has orchestrator visibility.
+    cursor.execute('''
+        INSERT OR IGNORE INTO user_orchestrator_access (id, user_id, orchestrator_id, created_at)
+        VALUES (?, ?, ?, ?)
+    ''', (str(uuid.uuid4()), payload.user_id, orch_id, now))
+
+    cursor.execute('''
+        SELECT id FROM server_links
+        WHERE user_id = ? AND orchestrator_id = ? AND server_uid = ?
+    ''', (payload.user_id, orch_id, server_uid))
+    existing_link = cursor.fetchone()
+
+    if existing_link:
+        cursor.execute('''
+            UPDATE server_links
+            SET permissions = ?
+            WHERE id = ?
+        ''', (requested_permission, existing_link['id']))
+    else:
+        cursor.execute('''
+            INSERT INTO server_links (id, user_id, orchestrator_id, server_uid, permissions, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (str(uuid.uuid4()), payload.user_id, orch_id, server_uid, requested_permission, now))
+
+    conn.commit()
+    conn.close()
+
+    AuditService.log(
+        user_id=current_user['id'],
+        username=current_user['username'],
+        action_type='create',
+        category='user',
+        target_type='server_link',
+        target_id=payload.user_id,
+        details=f"Granted {requested_permission} server access to {target_user['username']} on {server_uid}",
+        ip_address=request.client.host if request.client else None
+    )
+
+    return {
+        "message": "Server access updated",
+        "user_id": payload.user_id,
+        "server_uid": server_uid,
+        "permissions": requested_permission,
+    }
+
 @router.get("/{orch_id}/servers")
 async def get_servers(orch_id: str, current_user: dict = Depends(get_current_user)):
     """Get servers from specific orchestrator (live fetch)"""
@@ -237,12 +364,24 @@ async def get_servers(orch_id: str, current_user: dict = Depends(get_current_use
                     async with session.get(url, headers=headers) as response:
                         if response.status == 200:
                             servers = await response.json()
+                            user_server_permissions = OrchestratorService.get_user_server_link_permissions(
+                                current_user['id'], orch_id
+                            )
 
                             # Filter servers for non-admin users
                             if current_user['role'] != 'admin':
-                                allowed_servers = OrchestratorService.get_user_server_links(current_user['id'], orch_id)
+                                allowed_servers = list(user_server_permissions.keys())
                                 if allowed_servers:  # If user has specific server links, filter
                                     servers = [s for s in servers if f"{s.get('game_uid')}.{s.get('servername')}" in allowed_servers]
+
+                            for server in servers:
+                                uid = f"{server.get('game_uid')}.{server.get('servername')}"
+                                permission = user_server_permissions.get(uid, 'owner' if current_user['role'] == 'admin' else 'read')
+                                server['webui_access_permission'] = permission
+                                server['webui_can_manage_access'] = (
+                                    current_user['role'] == 'admin'
+                                    or permission in OrchestratorService.SERVER_MANAGE_PERMISSIONS
+                                )
 
                             # Update cache
                             conn = get_db()
@@ -416,10 +555,12 @@ async def server_action(
     current_user: dict = Depends(get_current_user)
 ):
     """Execute server action (start, stop, restart, update)"""
-    # Require admin for server control actions
+    # Require admin or server manager access for control actions.
     is_control_action = action in ['start', 'stop', 'restart', 'update', 'create', 'delete']
-    if is_control_action and current_user['role'] != 'admin':
-        raise HTTPException(status_code=403, detail="Server control requires admin access")
+    if is_control_action and not OrchestratorService.can_manage_server(
+        current_user['id'], orch_id, server_uid, current_user['role']
+    ):
+        raise HTTPException(status_code=403, detail="Server control requires server manager or admin access")
     
     if not OrchestratorService.check_user_access(current_user['id'], orch_id, current_user['role']):
         raise HTTPException(status_code=403, detail="Access denied")

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   Play, Square, RefreshCw, ArrowUpCircle, Info, Settings, Search,
   Grid, List, ChevronDown, ChevronRight, Plus, Trash2, Edit,
-  Loader2, Server, AlertCircle, X, Lock, Terminal
+  Loader2, Server, AlertCircle, X, Lock, Terminal, UserPlus
 } from 'lucide-react';
 import { api } from './utils/api';
 import { ServerInfoModal, ServerUpdateModal, ServerConsoleModal } from './components/server';
@@ -79,7 +79,20 @@ const getNormalizedEnvField = (key, config) => {
 };
 
 // Server Card Component (Grid View) - Logo on Right
-const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, onConsole, canManageServers, elementId }) => {
+const ServerCard = ({
+  server,
+  orchId,
+  loading,
+  onAction,
+  onInfo,
+  onUpdate,
+  onDelete,
+  onConsole,
+  onManageAccess,
+  canControlServer,
+  canManageAccess,
+  elementId,
+}) => {
   const serverUid = getServerUid(server);
   const isRunning = server.container_state === 'running';
   const isStopped = ['exited', 'created'].includes(server.container_state);
@@ -130,7 +143,7 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
 
       {/* Action Buttons */}
       <div className="server-card-actions">
-        {canManageServers ? (
+        {canControlServer ? (
           <>
             <button
               onClick={() => onAction(orchId, isRunning ? 'stop' : 'start', serverUid)}
@@ -192,16 +205,25 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
               )}
             </button>
           </>
-        ) : (
+        ) : !canManageAccess ? (
           <div className="col-span-2 text-center py-2 text-sm text-gray-500 flex items-center justify-center gap-2">
             <Lock className="w-4 h-4" /> View Only
           </div>
+        ) : null}
+
+        {canManageAccess && (
+          <button
+            onClick={() => onManageAccess?.(orchId, server)}
+            className="blue-button py-2 rounded text-sm flex items-center justify-center gap-1"
+          >
+            <UserPlus className="w-3 h-3" /> Access
+          </button>
         )}
 
         <button
           onClick={() => onInfo(server)}
           className={`gray-button py-2 rounded text-sm flex items-center justify-center gap-1 ${
-            !canManageServers ? 'col-span-2' : ''
+            !canControlServer && !canManageAccess ? 'col-span-2' : ''
           }`}
         >
           <Info className="w-3 h-3" /> Info
@@ -221,7 +243,20 @@ const ServerCard = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDel
 };
 
 // Server List Item (List View)
-const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, onDelete, onConsole, canManageServers, elementId }) => {
+const ServerListItem = ({
+  server,
+  orchId,
+  loading,
+  onAction,
+  onInfo,
+  onUpdate,
+  onDelete,
+  onConsole,
+  onManageAccess,
+  canControlServer,
+  canManageAccess,
+  elementId,
+}) => {
   const serverUid = getServerUid(server);
   const isRunning = server.container_state === 'running';
 
@@ -256,7 +291,7 @@ const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, o
       </span>
 
       <div className="server-list-actions">
-        {canManageServers && (
+        {canControlServer && (
           <>
             <button
               onClick={() => onAction(orchId, isRunning ? 'stop' : 'start', serverUid)}
@@ -280,6 +315,15 @@ const ServerListItem = ({ server, orchId, loading, onAction, onInfo, onUpdate, o
             </button>
           </>
         )}
+        {canManageAccess && (
+          <button
+            onClick={() => onManageAccess?.(orchId, server)}
+            className="blue-button px-3 py-1 rounded text-sm"
+            title="Manage user access"
+          >
+            <UserPlus className="w-4 h-4" />
+          </button>
+        )}
         <button
           onClick={() => onInfo(server)}
           className="gray-button px-3 py-1 rounded text-sm"
@@ -302,6 +346,7 @@ const OrchestratorSection = ({
   onUpdate,
   onDeleteServer,
   onConsole,
+  onManageAccess,
   onEdit,
   onDelete,
   viewMode,
@@ -468,7 +513,9 @@ const OrchestratorSection = ({
                           onUpdate={onUpdate}
                           onDelete={onDeleteServer}
                           onConsole={onConsole}
-                          canManageServers={canManageServers}
+                          onManageAccess={onManageAccess}
+                          canControlServer={canManageServers || Boolean(server.webui_can_manage_access)}
+                          canManageAccess={Boolean(server.webui_can_manage_access)}
                           elementId={getServerAnchorId(orchestrator.id, server)}
                         />
                       ))}
@@ -486,7 +533,9 @@ const OrchestratorSection = ({
                           onUpdate={onUpdate}
                           onDelete={onDeleteServer}
                           onConsole={onConsole}
-                          canManageServers={canManageServers}
+                          onManageAccess={onManageAccess}
+                          canControlServer={canManageServers || Boolean(server.webui_can_manage_access)}
+                          canManageAccess={Boolean(server.webui_can_manage_access)}
                           elementId={getServerAnchorId(orchestrator.id, server)}
                         />
                       ))}
@@ -955,6 +1004,133 @@ const OrchestratorModal = ({ orchestrator, onClose, onSave }) => {
   );
 };
 
+const ServerAccessModal = ({ orchId, server, onClose, onSaved }) => {
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [permission, setPermission] = useState('manage');
+
+  const serverUid = getServerUid(server);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const response = await api.get(`/proxy/${orchId}/server/${serverUid}/access`);
+        setUsers(response.data.users || []);
+      } catch (err) {
+        alert(err.response?.data?.detail || 'Failed to load users for server access');
+        onClose();
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    loadUsers();
+  }, [orchId, serverUid, onClose]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!selectedUserId) return;
+
+    setSubmitting(true);
+    try {
+      await api.post(`/proxy/${orchId}/server/${serverUid}/access`, {
+        user_id: selectedUserId,
+        permissions: permission,
+      });
+      onSaved();
+      onClose();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to grant server access');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const selectedUser = users.find((user) => user.id === selectedUserId);
+
+  return (
+    <div className="modal-backdrop flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="medieval-border rounded-lg p-6 max-w-lg w-full animate-modal-in"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="warcraft-subtitle text-2xl flex items-center gap-2">
+            <UserPlus className="w-6 h-6" /> Manage Server Access
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-400 mb-4">
+          Server: <span className="text-white">{serverUid}</span>
+        </p>
+
+        {loadingUsers ? (
+          <div className="flex justify-center py-8">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">User</label>
+              <select
+                value={selectedUserId}
+                onChange={(event) => setSelectedUserId(event.target.value)}
+                className="w-full"
+                required
+              >
+                <option value="">-- Select User --</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.username} ({user.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Permission</label>
+              <select
+                value={permission}
+                onChange={(event) => setPermission(event.target.value)}
+                className="w-full"
+              >
+                <option value="read">Read (view only)</option>
+                <option value="manage">Manage (start/stop/update + grant access)</option>
+              </select>
+            </div>
+
+            {selectedUser?.server_permission && (
+              <div className="bg-blue-900/20 border border-blue-700/50 p-3 rounded text-sm text-blue-300">
+                Current server permission: <strong>{selectedUser.server_permission}</strong>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <button type="button" onClick={onClose} className="gray-button flex-1 py-2 rounded">
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || !selectedUserId}
+                className="gold-button flex-1 py-2 rounded flex items-center justify-center gap-2"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                Save Access
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Main Servers Page
 export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions, initialFilter }) => {
   const [serversData, setServersData] = useState({});
@@ -968,6 +1144,7 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
   const [infoServer, setInfoServer] = useState(null);
   const [updateServer, setUpdateServer] = useState(null);
   const [consoleServer, setConsoleServer] = useState(null);
+  const [accessServer, setAccessServer] = useState(null);
   const [currentOrchId, setCurrentOrchId] = useState(null);
   const [plans, setPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
@@ -1197,6 +1374,7 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
             onUpdate={(server) => { setUpdateServer(server); setCurrentOrchId(orch.id); }}
             onDeleteServer={handleDeleteServer}
             onConsole={(server) => { setConsoleServer(server); setCurrentOrchId(orch.id); }}
+            onManageAccess={(orchId, server) => { setCurrentOrchId(orchId); setAccessServer(server); }}
             onEdit={(orch) => { setEditingOrch(orch); setShowOrchModal(true); }}
             onDelete={handleDeleteOrchestrator}
             viewMode={viewMode}
@@ -1249,6 +1427,15 @@ export const ServersPage = ({ orchestrators, onOrchestratorsChange, permissions,
           server={consoleServer}
           orchestratorId={currentOrchId}
           onClose={() => { setConsoleServer(null); setCurrentOrchId(null); }}
+        />
+      )}
+
+      {accessServer && currentOrchId && (
+        <ServerAccessModal
+          orchId={currentOrchId}
+          server={accessServer}
+          onClose={() => { setAccessServer(null); setCurrentOrchId(null); }}
+          onSaved={() => { loadServers(); }}
         />
       )}
     </div>

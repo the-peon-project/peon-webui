@@ -248,6 +248,11 @@ async def link_user_server(
     
     try:
         cursor.execute('''
+            INSERT OR IGNORE INTO user_orchestrator_access (id, user_id, orchestrator_id, created_at)
+            VALUES (?, ?, ?, ?)
+        ''', (str(uuid.uuid4()), link.user_id, link.orchestrator_id, now))
+
+        cursor.execute('''
             INSERT INTO server_links (id, user_id, orchestrator_id, server_uid, permissions, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (link_id, link.user_id, link.orchestrator_id, link.server_uid, link.permissions, now))

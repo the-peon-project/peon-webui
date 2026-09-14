@@ -8,6 +8,8 @@ from core.orchestrator_url import resolve_orchestrator_url, resolve_orchestrator
 
 class OrchestratorService:
     """Service for orchestrator management"""
+
+    SERVER_MANAGE_PERMISSIONS = {'owner', 'manage'}
     
     @staticmethod
     def get_all(user_id: str, role: str) -> List[dict]:
@@ -169,3 +171,29 @@ class OrchestratorService:
         servers = [row[0] for row in cursor.fetchall()]
         conn.close()
         return servers
+
+    @staticmethod
+    def get_user_server_link_permissions(user_id: str, orch_id: str) -> dict:
+        """Get server permission map for a user in an orchestrator"""
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT server_uid, permissions FROM server_links
+            WHERE user_id = ? AND orchestrator_id = ?
+        ''', (user_id, orch_id))
+        permission_map = {
+            row[0]: str(row[1] or 'read').strip().lower()
+            for row in cursor.fetchall()
+        }
+        conn.close()
+        return permission_map
+
+    @staticmethod
+    def can_manage_server(user_id: str, orch_id: str, server_uid: str, role: str) -> bool:
+        """Check whether a user can manage a specific server"""
+        if role == 'admin':
+            return True
+
+        permission_map = OrchestratorService.get_user_server_link_permissions(user_id, orch_id)
+        permission = permission_map.get(server_uid, 'read')
+        return permission in OrchestratorService.SERVER_MANAGE_PERMISSIONS
