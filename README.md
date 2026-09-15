@@ -1,3 +1,12 @@
+> **⚠️ DEPRECATED — moved to the `peon` monorepo**
+>
+> This repository has been consolidated into [`peon`](https://github.com/the-peon-project/peon) at
+> [`peon/services/webui`](https://github.com/the-peon-project/peon/tree/main/services/webui), with
+> full commit history preserved via `git subtree`. This repo is archived and read-only — make new
+> changes in `peon/services/webui` instead.
+
+---
+
 # PEON Dashboard
 
 A modern web application for managing game servers using the PEON ecosystem (peon-orchestrator, peon-warplans).

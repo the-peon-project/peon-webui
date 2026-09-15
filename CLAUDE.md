@@ -1,3 +1,10 @@
+> **⚠️ DEPRECATED — moved to the `peon` monorepo.** This repo's content now lives at
+> `peon/services/webui` (full history preserved via `git subtree`). See
+> `/home/richard/development/peon/services/webui/CLAUDE.md` for the current guide. This repo is
+> archived and read-only.
+
+---
+
 # PEON Web UI Guide
 
 This repo contains the PEON dashboard application. It is the busiest application surface in the workspace and the only repo with a clear committed automated test suite.
