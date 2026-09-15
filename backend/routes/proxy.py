@@ -508,6 +508,7 @@ async def deploy_server(
         "servername": deploy_data.server_name,
         **deploy_data.environment
     }
+    server_uid = f"{deploy_data.game_uid}.{deploy_data.server_name}"
 
     # Best-effort logo hydration for newly deployed recipe/game combinations.
     try:
@@ -520,10 +521,14 @@ async def deploy_server(
         async with aiohttp.ClientSession(timeout=timeout) as session:
             headers = {"X-Api-Key": orch['api_key'], "Content-Type": "application/json"}
             base_url = resolve_orchestrator_url(orch['base_url'])
-            url = f"{base_url}/api/v1/server/create"
+            url = f"{base_url}/api/v1/server/create/{server_uid}"
             
-            async with session.post(url, headers=headers, json=deploy_payload) as response:
-                result = await response.json()
+            async with session.put(url, headers=headers, json=deploy_payload) as response:
+                try:
+                    result = await response.json()
+                except Exception:
+                    result_text = await response.text()
+                    result = {"detail": result_text or "Deploy failed"}
                 
                 if response.status in [200, 201]:
                     # Log deployment
@@ -540,6 +545,8 @@ async def deploy_server(
                     return {"success": True, "message": "Server deployment initiated", "data": result}
                 else:
                     raise HTTPException(status_code=response.status, detail=result.get('detail', 'Deploy failed'))
+    except HTTPException:
+        raise
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Deployment request timeout")
     except Exception as e:
